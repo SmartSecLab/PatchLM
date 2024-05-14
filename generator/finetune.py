@@ -1,33 +1,25 @@
 # Fine-tune the model on the dataset
-import yaml
+
 from transformers import (
     TrainingArguments,
     Trainer,
 )
 
 # custom functions
-from generator.utility import get_logger
-
-
-# Setup logger
-log = get_logger()
+import generator.utility as util
 
 dash_line = "=" * 50
 
-
-def load_config(config_path):
-    with open(config_path, "r") as file:
-        config = yaml.safe_load(file)
-    return config
-
-
-config = load_config("generator/gen-config.yaml")
+# Setup logger
+log = util.get_logger()
+config = util.load_config()
 
 
 def tokenize_function(example, tokenizer):
     start_prompt = "Summarize the following conversation.\n\n"
     end_prompt = "\n\nSummary: "
-    prompt = [start_prompt + dialogue + end_prompt for dialogue in example["dialogue"]]
+    prompt = [start_prompt + dialogue +
+              end_prompt for dialogue in example["dialogue"]]
     example["input_ids"] = tokenizer(
         prompt, padding="max_length", truncation=True, return_tensors="pt"
     ).input_ids

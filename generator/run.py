@@ -1,5 +1,4 @@
 # Generative AI Use Case: Patches Generation
-
 import time
 import torch
 from transformers import (
@@ -23,24 +22,25 @@ from generator.evaluate import (
     show_original_instruct_summary,
     get_trainable_model_pars,
 )
-from generator.utility import get_logger
-
-
-# Setup logger
-log = get_logger()
-
+import generator.utility as util
 dash_line = "=" * 50
 
+# Setup logger
+log = util.get_logger()
+config = util.load_config()
 dataset = load_dataset_from_df()
 
 # # ============= Load the model and tokenizer =============
-# Load the https://huggingface.co/Salesforce/codet5-base, creating an instance of the `AutoModelForSeq2SeqLM` class with the `.from_pretrained()` method.
+# Load the https://huggingface.co/Salesforce/codet5-base, creating
+# an instance of the `AutoModelForSeq2SeqLM` class with the `.from_pretrained()` method.
 
-# model_name = 'Salesforce/codet5-base'
-model_name = "Salesforce/codet5p-6B"
-tokenizer = RobertaTokenizer.from_pretrained(model_name, trust_remote_code=True)
+model_name = config["base_model"]
+# model_name = "Salesforce/codet5p-6B"
+tokenizer = RobertaTokenizer.from_pretrained(
+    model_name, trust_remote_code=True)
 # tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name, trust_remote_code=True)
+model = AutoModelForSeq2SeqLM.from_pretrained(
+    model_name, trust_remote_code=True)
 # model = T5ForConditionalGeneration.from_pretrained(model_name)
 log.info("Model and Tokenizer loaded successfully!")
 log.info(f"Original Model: {model_name}")
@@ -53,15 +53,16 @@ text = "def greet(user): print(f'hello <extra_id_0>!')"
 input_ids = tokenizer(text, return_tensors="pt").input_ids
 
 # simply generate a single sequence
-generated_ids = model.generate(input_ids, max_length=8)
-log.debug(
-    f"Model generated output: {tokenizer.decode(generated_ids[0],skip_special_tokens=True)}"
-)
+generated_ids = model.generate(input_ids, max_length=20)
+gen_output = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+log.debug(f"Model generated output: {gen_output}")
 # this prints "{user.username}"
 log.info(dash_line)
 
 
-# Now it's time to explore how well the base LLM summarizes a dialogue without any prompt engineering. **Prompt engineering** is an act of a human changing the **prompt** (input) to improve the response for a given task.
+# Now it's time to explore how well the base LLM summarizes a dialogue
+# without any prompt engineering. **Prompt engineering** is an act
+# of a human changing the **prompt** (input) to improve the response for a given task.
 example_indices = [3, 5]
 example_index_to_summarize = 2
 
@@ -81,9 +82,15 @@ prompt_summary(
 
 
 # 3 - Summarize Dialogue with an Instruction Prompt
-# You can see that the guesses of the model make some sense, but it doesn't seem to be sure what task it is supposed to accomplish. Seems it just makes up the next sentence in the dialogue. Prompt engineering can help here.
+# You can see that the guesses of the model make some sense,
+# but it doesn't seem to be sure what task it is supposed to accomplish.
+# Seems it just makes up the next sentence in the dialogue.
+# Prompt engineering can help here.
 # ## 3 - Summarize Dialogue with an Instruction Prompt
-# Prompt engineering is an important concept in using foundation models for text generation. You can check out [this blog](https://www.amazon.science/blog/emnlp-prompt-engineering-is-the-new-feature-engineering) from Amazon Science for a quick introduction to prompt engineering.
+# Prompt engineering is an important concept in using foundation
+# models for text generation. You can check out
+# [this blog](https://www.amazon.science/blog/emnlp-prompt-engineering-is-the-new-feature-engineering)
+# from Amazon Science for a quick introduction to prompt engineering.
 # ### 3.1 - Zero Shot Inference with an Instruction Prompt
 
 prompt_summary(
@@ -136,7 +143,11 @@ prompt_summary(
 # generation_config = GenerationConfig(max_new_tokens=10)
 # generation_config = GenerationConfig(max_new_tokens=50, do_sample=True, temperature=0.1)
 # generation_config = GenerationConfig(max_new_tokens=50, do_sample=True, temperature=0.5)
-generation_config = GenerationConfig(max_new_tokens=50, do_sample=True, temperature=2.0)
+generation_config = GenerationConfig(
+    max_new_tokens=config['generation']['max_new_tokens'],
+    do_sample=config['generation']['do_sample'],
+    temperature=config['generation']['temperature']
+)
 
 prompt_summary(
     dataset,
@@ -188,7 +199,8 @@ instruct_model = AutoModelForSeq2SeqLM.from_pretrained(
 
 # ### 2.3 - Evaluate the Model Qualitatively (Human Evaluation)
 show_original_instruct_summary(
-    dataset, tokenizer, original_model, instruct_model, index=example_index_to_summarize
+    dataset, tokenizer, original_model, instruct_model,
+    index=example_index_to_summarize
 )
 
 
@@ -196,7 +208,8 @@ show_original_instruct_summary(
 dialogues = dataset["test"][0:4]["dialogue"]
 human_baseline_summaries = dataset["test"][0:4]["summary"]
 
-result_csv = "data/patch-gen-training-results.csv"
+# result_csv = "data/patch-gen-training-results.csv"
+result_csv = config["result_csv"]
 
 results = generate_summaries(
     original_model,

@@ -8,13 +8,16 @@ from transformers import (
 
 # custom imports
 from generator.prompt import zero_prompt
-from generator.utility import get_logger
+import generator.utility as util
+
 
 # Setup logger
-log = get_logger()
+log = util.get_logger()
+config = util.load_config()
 
-dash_line = "=" * 50
+
 rouge = evaluate.load("rouge")
+dash_line = "=" * 50
 
 
 def get_trainable_model_pars(model):
@@ -24,11 +27,17 @@ def get_trainable_model_pars(model):
         all_model_params += param.numel()
         if param.requires_grad:
             trainable_model_params += param.numel()
-    return f"trainable model parameters: {trainable_model_params}\nall model parameters: {all_model_params}\npercentage of trainable model parameters: {100 * trainable_model_params / all_model_params:.2f}%"
+    percentage = 100 * trainable_model_params / all_model_params
+
+    return (
+        f"Trainable model parameters: {trainable_model_params}\n"
+        f"All model parameters: {all_model_params}\n"
+        f"Percentage of trainable model parameters: {percentage:.2f}%"
+    )
 
 
 def show_original_instruct_summary(
-    dataset, tokenizer, original_model, instruct_model, index=200
+    dataset, tokenizer, original_model, instruct_model, index=2
 ):
     prompt = zero_prompt(dataset, index=index)
     human_baseline_summary = dataset["test"][index]["summary"]
@@ -37,7 +46,10 @@ def show_original_instruct_summary(
 
     original_model_outputs = original_model.generate(
         input_ids=input_ids,
-        generation_config=GenerationConfig(max_new_tokens=200, num_beams=1),
+        generation_config=GenerationConfig(
+            max_new_tokens=config["generation"]["max_new_tokens"],
+            num_beams=config["generation"]["num_beams"],
+        ),
     )
     original_model_text_output = tokenizer.decode(
         original_model_outputs[0], skip_special_tokens=True
@@ -45,7 +57,10 @@ def show_original_instruct_summary(
 
     instruct_model_outputs = instruct_model.generate(
         input_ids=input_ids,
-        generation_config=GenerationConfig(max_new_tokens=200, num_beams=1),
+        generation_config=GenerationConfig(
+            max_new_tokens=config["generation"]["max_new_tokens"],
+            num_beams=config["generation"]["num_beams"],
+        ),
     )
     instruct_model_text_output = tokenizer.decode(
         instruct_model_outputs[0], skip_special_tokens=True
@@ -67,14 +82,14 @@ def evaluate_rouge(results):
 
     original_model_results = rouge.compute(
         predictions=original_model_summaries,
-        references=human_baseline_summaries[0 : len(original_model_summaries)],
+        references=human_baseline_summaries[0: len(original_model_summaries)],
         use_aggregator=True,
         use_stemmer=True,
     )
 
     instruct_model_results = rouge.compute(
         predictions=instruct_model_summaries,
-        references=human_baseline_summaries[0 : len(instruct_model_summaries)],
+        references=human_baseline_summaries[0: len(instruct_model_summaries)],
         use_aggregator=True,
         use_stemmer=True,
     )
@@ -114,7 +129,8 @@ def generate_summaries(
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
         original_model_outputs = original_model.generate(
-            input_ids=input_ids, generation_config=GenerationConfig(max_new_tokens=200)
+            input_ids=input_ids, generation_config=GenerationConfig(
+                max_new_tokens=config["generation"]["max_new_tokens"],)
         )
         original_model_text_output = tokenizer.decode(
             original_model_outputs[0], skip_special_tokens=True
@@ -123,7 +139,9 @@ def generate_summaries(
         original_model_summaries.append(original_model_text_output)
 
         instruct_model_outputs = instruct_model.generate(
-            input_ids=input_ids, generation_config=GenerationConfig(max_new_tokens=200)
+            input_ids=input_ids, generation_config=GenerationConfig(
+                max_new_tokens=config["generation"]["max_new_tokens"],
+            )
         )
         instruct_model_text_output = tokenizer.decode(
             instruct_model_outputs[0], skip_special_tokens=True

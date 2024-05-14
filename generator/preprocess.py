@@ -6,14 +6,16 @@ import pandas as pd
 import sqlite3
 
 # custom functions
-from generator.utility import get_logger
+import generator.utility as util
 
 
 # Setup logger
-log = get_logger()
+log = util.get_logger()
+config = util.load_config()
 
-debug = True
-db_file = "/Users/guru/research/FixMe/data/FixMe-v1.db"
+debug = config["debug_mode"]
+# db_file = "/Users/guru/research/FixMe/data/FixMe-v1.db"
+db_file = config["preprocess"]["db_file"]
 
 
 def load_df_from_sqlite():
@@ -85,7 +87,10 @@ def load_dataset_from_df():
 
     # Create DatasetDict with the desired format
     dataset = DatasetDict(
-        {"train": train_dataset, "validation": validation_dataset, "test": test_dataset}
+        {"train": train_dataset,
+         "validation": validation_dataset,
+         "test": test_dataset,
+         }
     )
     log.info(f'Train shape: {dataset["train"].shape}')
     log.info(f'Validation shape: {dataset["validation"].shape}')

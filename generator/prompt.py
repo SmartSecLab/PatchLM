@@ -6,11 +6,12 @@ from transformers import (
 from transformers import GenerationConfig
 
 # custom functions
-from generator.utility import get_logger
+import generator.utility as util
 
 
 # Setup logger
-log = get_logger()
+log = util.get_logger()
+config = util.load_config()
 
 dash_line = "-" * 20
 
@@ -95,12 +96,12 @@ def generate_summary(prompt, tokenizer, model, gen_config=None):
     """
     inputs = tokenizer(prompt, return_tensors="pt")
     if gen_config is None:
-        gen_config = GenerationConfig(max_length=100)
+        gen_config = GenerationConfig(max_length=200)
 
     output = tokenizer.decode(
         model.generate(
             inputs["input_ids"],
-            max_new_tokens=100,
+            max_new_tokens=config["generation"]["max_new_tokens"],
             generation_config=gen_config,
         )[0],
         skip_special_tokens=True,
@@ -133,7 +134,7 @@ def prompt_summary(
     summary = dataset["test"][example_index_to_summarize]["summary"]
     output = generate_summary(prompt, tokenizer, model, gen_config)
 
-    dash_line = "-".join("" for x in range(100))
+    dash_line = "-"*100
     log.info(dash_line)
     log.info(f"INPUT PROMPT:\n{prompt}")
     log.info(dash_line)

@@ -1,5 +1,7 @@
 import logging
 import time
+import subprocess
+import yaml
 from pathlib import Path
 
 
@@ -35,8 +37,8 @@ if not hasattr(logging, "logger_configured"):
 
 
 def get_logger():
+    """ Return the logger """
     return logging.root
-
 
 # # Setup logger
 # logger = logger_config.setup_logger()
@@ -47,3 +49,22 @@ def get_logger():
 # logger.warning('This is a warning message')
 # logger.error('This is an error message')
 # logger.critical('This is a critical message')
+
+
+def load_config(config_path="generator/gen-config.yaml"):
+    """ Load the configuration from the YAML file """
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+    return config
+
+
+def run_os_command(command):
+    try:
+        result = subprocess.run(command, shell=True,
+                                capture_output=True, text=True)
+        if result.returncode == 0:
+            print("Output:", result.stdout)
+        else:
+            print("Error:", result.stderr)
+    except Exception as e:
+        print("An error occurred:", e)
