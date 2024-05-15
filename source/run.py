@@ -13,16 +13,16 @@ from transformers import AutoModelForSeq2SeqLM
 
 
 # custom functions
-from generator.preprocess import load_dataset_from_df
-from generator.finetune import fine_tune_model
-from generator.prompt import prompt_summary
-from generator.evaluate import (
+from source.preprocess import load_dataset_from_df
+from source.finetune import fine_tune_model
+from source.prompt import prompt_summary
+from source.evaluate import (
     generate_summaries,
     evaluate_rouge,
     show_original_instruct_summary,
     get_trainable_model_pars,
 )
-import generator.utility as util
+import source.utility as util
 dash_line = "=" * 50
 
 # Setup logger

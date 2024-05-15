@@ -6,7 +6,7 @@ from transformers import (
 )
 
 # custom functions
-import generator.utility as util
+import source.utility as util
 
 dash_line = "=" * 50
 

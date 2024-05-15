@@ -6,7 +6,7 @@ from transformers import (
 from transformers import GenerationConfig
 
 # custom functions
-import generator.utility as util
+import source.utility as util
 
 
 # Setup logger

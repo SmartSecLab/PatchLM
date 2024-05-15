@@ -1,169 +1,70 @@
-import os
-from pathlib import Path
-import sqlite3
+import logging
+import time
+import subprocess
 import yaml
+from pathlib import Path
 
 
-class UtilityManager:
-    def __init__(self, config_file):
-        self.config = self.load_config(config_file)
-        self.repo_name = Path(self.config["REPO_URL"]).stem
+# Configure logger only once
+if not hasattr(logging, "logger_configured"):
+    logging.logger_configured = True
 
-        Path("figure").mkdir(parents=True, exist_ok=True)
-        Path(self.config["DATA_DIR"]).mkdir(parents=True, exist_ok=True)
+    # Create file handler which logs even debug messages
+    # log_dir = Path('docs/logs')
+    log_dir = Path("logs")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_filename = log_dir / f'run_{time.strftime("%Y%m%d%H%M%S")}.log'
 
-        self.db_file = self.config['DB_FILE']
-        if self.config['FRESH_MINE']:
-            print(f"Cleaning the database: {self.db_file}")
-            os.remove(self.db_file)
+    # Create a logger
+    logger = logging.getLogger("log")
+    logger.setLevel(logging.DEBUG)
+
+    # Create file handler which logs even debug messages
+    fh = logging.FileHandler(log_filename)
+    fh.setLevel(logging.DEBUG)
+
+    # Create formatter and add it to the handler
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    fh.setFormatter(formatter)
+
+    # Add the handler to the logger
+    logger.addHandler(fh)
+
+    # Make the logger accessible globally
+    logging.root = logger
+
+
+def get_logger():
+    """ Return the logger """
+    return logging.root
+
+# # Setup logger
+# logger = logger_config.setup_logger()
+
+# # Some sample log messages
+# logger.debug('This is a debug message')
+# logger.info('This is an info message')
+# logger.warning('This is a warning message')
+# logger.error('This is an error message')
+# logger.critical('This is a critical message')
+
+
+def load_config(config_path="generator/gen-config.yaml"):
+    """ Load the configuration from the YAML file """
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+    return config
+
+
+def run_os_command(command):
+    try:
+        result = subprocess.run(command, shell=True,
+                                capture_output=True, text=True)
+        if result.returncode == 0:
+            print("Output:", result.stdout)
         else:
-            print(f"Using the existing database: {self.db_file}")
-
-        self.conn = sqlite3.connect(self.db_file)
-        self.cur = self.conn.cursor()
-        print("Connected to SQLite!")
-
-    @staticmethod
-    def load_config(config_file):
-        with open(config_file, "r") as file:
-            config = yaml.safe_load(file)
-        return config
-
-    def table_exists(self, table_name):
-        """Check if a table exists in the SQLite database"""
-        sql = f"SELECT name FROM sqlite_master WHERE type='table'" \
-            f"AND name='{table_name}'"
-        self.cur.execute(sql)
-        result = self.cur.fetchone()
-        return result if result else False
-
-    def get_col_values(self, table, column):
-        """Get all the values from a specific column in a table"""
-        self.cur.execute("SELECT " + column + " FROM " + table)
-        result = self.cur.fetchall()
-        result = [x[0] for x in result]
-        return result if result else False
-
-    def get_table_shape(self, table_name):
-        """Execute a query to show shape"""
-        util.cur.execute(f"SELECT COUNT(*) FROM {table_name}")
-        num_rows = util.cur.fetchone()[0]
-
-        util.cur.execute(f"PRAGMA table_info({table_name})")
-        columns = util.cur.fetchall()
-        column_names = [column[1] for column in columns]
-        return (num_rows, len(column_names))
-
-    def save_table(self, df, table_name="patch_collection"):
-        """Save the DataFrames to sqlite3 database"""
-        print("=" * 50)
-        print(f"Saving {table_name}...")
-        if not df.empty:
-            if util.table_exists(table_name) and util.config["INCREMENTAL_UPDATE"] is True:
-                print(f'{table_name} shape: {util.get_table_shape(table_name)}')
-                df.astype(str).to_sql(table_name, util.conn,
-                                      if_exists="append", index=False)
-            else:
-                print(f"Creating {table_name} table...")
-                df.astype(str).to_sql(table_name, util.conn,
-                                      if_exists="replace", index=False)
-            print(f"Shape of {table_name}: {df.shape}")
-        else:
-            print(f"No data to save in {table_name}.")
-        print("=" * 50)
-
-    def close_connection(self):
-        """Close the SQLite connection"""
-        self.conn.close()
-        print("SQLite connection closed!")
-
-    def get_language_from_ext(self, file_path):
-        """Get the programming language from the file extension"""
-        extension = file_path.split(".")[-1].lower()
-        language_mapping = {
-            "c": "C",
-            "h": "C",
-            "cpp": "C++",
-            "hpp": "C++",
-            "java": "Java",
-            "py": "Python",
-            "js": "JavaScript",
-            "html": "HTML",  # Markup language, not a programming language
-            "htm": "HTML",
-            "css": "CSS",  # Style sheet language, not a programming language
-            "php": "PHP",
-            "rb": "Ruby",
-            "swift": "Swift",
-            "cs": "C#",
-            "vb": "Visual Basic",
-            "go": "Go",
-            "rust": "Rust",
-            "ts": "TypeScript",
-            "dart": "Dart",
-            "pl": "Perl",
-            "lua": "Lua",
-            "sh": "Shell script",
-            "ps1": "PowerShell script",
-            "jsx": "JSX",  # JavaScript extension used with React
-            "tsx": "TypeScript with JSX",  # Used with React
-            "r": "R",
-            "scala": "Scala",
-            "jl": "Julia",
-            "matlab": "MATLAB",
-            "asm": "Assembly",
-            "sql": "SQL",  # Query language, not a programming language
-            "kt": "Kotlin",
-            "vue": "Vuejs",  # JavaScript framework
-            "scss": "SASS",  # CSS preprocessor
-            "sass": "SASS",
-            "txt": "txt",  # Text file
-            "md": "Markdown",  # Markup language
-            "json": "JSON",  # Data interchange format
-            "xml": "XML",  # Markup language
-            "yml": "YAML",  # Markup language
-            "yaml": "YAML",
-            "ini": "INI",  # Configuration file format
-            "cfg": "INI",
-            "conf": "INI",
-            "properties": "INI",
-            "toml": "TOML",  # Markup language
-        }
-        return language_mapping.get(extension, "Unknown")
-
-
-util = UtilityManager("config.yaml")
-
-
-# def create_table(conn, table_name):
-#     cursor = conn.cursor()
-#     cursor.execute(f'''
-#         CREATE TABLE IF NOT EXISTS {table_name} (
-#             id INTEGER PRIMARY KEY,
-#             col1 TEXT,
-#             col2 TEXT,
-#             col3 TEXT -- Add more columns as needed
-#         )
-#     ''')
-#     conn.commit()
-
-# def update_or_insert_row(conn, table_name, data):
-#     """ Update the row if the ID exists, otherwise insert a new row """
-#     cursor = conn.cursor()
-
-#     # Check if the ID exists in the table
-#     cursor.execute(f"SELECT EXISTS(SELECT 1 FROM {table_name} WHERE id = ?)", (data['id'],))
-#     exists = cursor.fetchone()[0]
-
-#     if exists:
-#         # Update the row
-#         update_query = f"UPDATE {table_name} SET "
-#         update_query += ', '.join([f"{key} = ?" for key in data.keys() if key != 'id'])
-#         update_query += " WHERE id = ?"
-
-#         cursor.execute(update_query, tuple(data[key] for key in data.keys() if key != 'id') + (data['id'],))
-#     else:
-#         # Insert a new row
-#         insert_query = f"INSERT INTO {table_name} ({', '.join(data.keys())}) VALUES ({', '.join(['?']*len(data))})"
-#         cursor.execute(insert_query, tuple(data.values()))
-
-#     conn.commit()
+            print("Error:", result.stderr)
+    except Exception as e:
+        print("An error occurred:", e)

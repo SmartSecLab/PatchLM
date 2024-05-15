@@ -6,7 +6,7 @@ import pandas as pd
 import sqlite3
 
 # custom functions
-import generator.utility as util
+import source.utility as util
 
 
 # Setup logger

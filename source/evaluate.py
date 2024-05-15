@@ -7,8 +7,8 @@ from transformers import (
 )
 
 # custom imports
-from generator.prompt import zero_prompt
-import generator.utility as util
+from source.prompt import zero_prompt
+import source.utility as util
 
 
 # Setup logger

@@ -1,6 +1,19 @@
-# paths
-REPO_URL: https://github.com/CVEProject/cvelistV5.git
-DATA_DIR: /Users/guru/research/FixMe/data/
-DB_FILE: /Users/guru/research/FixMe/data/FixMe.db
-FRESH_MINE: false # removes existing database
-INCREMENTAL_UPDATE: false
+base_model: Salesforce/codet5-base
+result_csv: data/patch-gen-training-results.csv
+generation:
+  max_new_tokens: 200
+  do_sample: True
+  temperature: 2.0
+  num_beams: 1
+fine_tuning:
+  output_dir: models
+  learning_rate: 1e-5
+  num_train_epochs: 100
+  weight_decay: 0.01
+  logging_steps: 5
+  max_steps: 5
+preprocess:
+  db_file: data/FixMe-v1.db
+  prog_lang: Java
+
+debug_mode: True
