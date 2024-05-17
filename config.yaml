@@ -1,10 +1,14 @@
 base_model: Salesforce/codet5-base
 result_csv: data/patch-gen-training-results.csv
+debug_mode: False
+#
 generation:
   max_new_tokens: 200
   do_sample: True
   temperature: 2.0
   num_beams: 1
+  tokenizer: roberta # or auto
+#
 fine_tuning:
   output_dir: models
   learning_rate: 1e-5
@@ -12,8 +16,9 @@ fine_tuning:
   weight_decay: 0.01
   logging_steps: 5
   max_steps: 5
+#
 preprocess:
   db_file: data/FixMe-v1.db
-  prog_lang: Java
-
-debug_mode: True
+  prog_lang: # list of programming languages
+    - C
+    - C++

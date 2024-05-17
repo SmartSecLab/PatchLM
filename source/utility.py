@@ -13,7 +13,7 @@ if not hasattr(logging, "logger_configured"):
     # log_dir = Path('docs/logs')
     log_dir = Path("logs")
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_filename = log_dir / f'run_{time.strftime("%Y%m%d%H%M%S")}.log'
+    log_filename = log_dir / f'run-{time.strftime("%Y-%m-%d--%H-%M")}.log'
 
     # Create a logger
     logger = logging.getLogger("log")
@@ -23,14 +23,20 @@ if not hasattr(logging, "logger_configured"):
     fh = logging.FileHandler(log_filename)
     fh.setLevel(logging.DEBUG)
 
+    # Create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+
     # Create formatter and add it to the handler
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
     fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
 
     # Add the handler to the logger
     logger.addHandler(fh)
+    logger.addHandler(ch)
 
     # Make the logger accessible globally
     logging.root = logger
@@ -51,9 +57,10 @@ def get_logger():
 # logger.critical('This is a critical message')
 
 
-def load_config(config_path="generator/gen-config.yaml"):
+def load_config():
     """ Load the configuration from the YAML file """
-    with open(config_path, "r") as file:
+    config_file = "config.yaml"
+    with open(config_file, "r") as file:
         config = yaml.safe_load(file)
     return config
 

@@ -2,7 +2,6 @@
 
 import pandas as pd
 from datasets import Dataset, DatasetDict
-import pandas as pd
 import sqlite3
 
 # custom functions
@@ -13,16 +12,18 @@ import source.utility as util
 log = util.get_logger()
 config = util.load_config()
 
-debug = config["debug_mode"]
-# db_file = "/Users/guru/research/FixMe/data/FixMe-v1.db"
+
 db_file = config["preprocess"]["db_file"]
+prog_list = config["preprocess"]["prog_lang"]
+log.info("Programming languages: %s", prog_list)
 
 
 def load_df_from_sqlite():
     """Load the dataset from the SQLite database"""
     conn = sqlite3.connect(db_file)
 
-    if debug:
+    if config["debug_mode"]:
+        log.info("Debug mode is ON")
         df = pd.read_sql_query(
             "SELECT * FROM hunk_collection LIMIT 500;", conn)
     else:
@@ -30,10 +31,8 @@ def load_df_from_sqlite():
 
     log.info(f"Dataset shape: {df.shape}")
 
-    df = df[df.programming_language.isin(["C", "C++"])].reset_index(drop=True)
-    df = df[["code_before", "code_after"]]
-
-    return df
+    df = df[df.programming_language.isin(prog_list)].reset_index(drop=True)
+    return df[["code_before", "code_after"]]
 
 
 def load_dataset_from_df():

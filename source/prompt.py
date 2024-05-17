@@ -1,8 +1,5 @@
 # Generative AI Use Case: Patches Generation
 
-from transformers import (
-    GenerationConfig,
-)
 from transformers import GenerationConfig
 
 # custom functions

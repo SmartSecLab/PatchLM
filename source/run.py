@@ -5,49 +5,48 @@ from transformers import (
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
     GenerationConfig,
+    RobertaTokenizer,
 )
-from transformers import RobertaTokenizer
-from transformers import GenerationConfig
-from transformers import AutoTokenizer
-from transformers import AutoModelForSeq2SeqLM
-
 
 # custom functions
 from source.preprocess import load_dataset_from_df
 from source.finetune import fine_tune_model
 from source.prompt import prompt_summary
-from source.evaluate import (
-    generate_summaries,
-    evaluate_rouge,
-    show_original_instruct_summary,
-    get_trainable_model_pars,
-)
+import source.evaluate as eva
 import source.utility as util
+
 dash_line = "=" * 50
 
 # Setup logger
 log = util.get_logger()
 config = util.load_config()
+log.info(dash_line)
+log.info(f"Config: {config}")
+log.info(dash_line)
+
 dataset = load_dataset_from_df()
 
 # # ============= Load the model and tokenizer =============
 # Load the https://huggingface.co/Salesforce/codet5-base, creating
-# an instance of the `AutoModelForSeq2SeqLM` class with the `.from_pretrained()` method.
 
 model_name = config["base_model"]
-# model_name = "Salesforce/codet5p-6B"
-tokenizer = RobertaTokenizer.from_pretrained(
-    model_name, trust_remote_code=True)
-# tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+
+if config["generation"]['tokenizer'] == 'roberta':
+    tokenizer = RobertaTokenizer.from_pretrained(
+        model_name, trust_remote_code=True)
+else:
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+log.info("Tokenizer loaded successfully!")
+
 model = AutoModelForSeq2SeqLM.from_pretrained(
     model_name, trust_remote_code=True)
 # model = T5ForConditionalGeneration.from_pretrained(model_name)
-log.info("Model and Tokenizer loaded successfully!")
+log.info("Model loaded successfully!")
 log.info(f"Original Model: {model_name}")
 log.info(dash_line)
 
 # # ============= Test the Model =============
-log.debug("Test the Model")
+log.debug("Test the Model generating a simple code snippet")
 text = "def greet(user): print(f'hello <extra_id_0>!')"
 # text = "def add(a, b): \n int sum= a + b \n return sum"
 input_ids = tokenizer(text, return_tensors="pt").input_ids
@@ -62,7 +61,8 @@ log.info(dash_line)
 
 # Now it's time to explore how well the base LLM summarizes a dialogue
 # without any prompt engineering. **Prompt engineering** is an act
-# of a human changing the **prompt** (input) to improve the response for a given task.
+# of a human changing the **prompt** (input) to improve the response
+# for a given task.
 example_indices = [3, 5]
 example_index_to_summarize = 2
 
@@ -79,7 +79,6 @@ prompt_summary(
     example_indices=None,
     example_index_to_summarize=example_index_to_summarize,
 )
-
 
 # 3 - Summarize Dialogue with an Instruction Prompt
 # You can see that the guesses of the model make some sense,
@@ -106,9 +105,7 @@ prompt_summary(
 # TODO: Check prompt template of CodeT5
 # ### 3.2 - Zero Shot Inference with the Prompt Template from FLAN-T5
 
-
 # ## 4 - Summarize Dialogue with One Shot and Few Shot Inference
-#
 # ### 4.1 - One Shot Inference
 
 example_indices_full = [2]
@@ -162,7 +159,7 @@ prompt_summary(
 # # # Fine-Tune a Generative AI Model for Dialogue Summarization
 log.info("\n\n")
 log.info(dash_line)
-log.info("========== Fine-Tune the Codet5 Model for Patch Generation =======")
+log.info(f"========== Fine-Tune the {model_name} for Patch Generation =======")
 log.info(dash_line)
 original_model = AutoModelForSeq2SeqLM.from_pretrained(
     model_name, torch_dtype=torch.bfloat16
@@ -171,7 +168,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 log.info("Model and Tokenizer loaded successfully!")
 
 # ### 1.2 - Get the Trainable Parameters of the Model
-log.info(get_trainable_model_pars(original_model))
+log.info(eva.get_trainable_model_pars(original_model))
 
 # ### 1.3 - Test the Model with Zero Shot Inferencing
 prompt_summary(
@@ -198,7 +195,7 @@ instruct_model = AutoModelForSeq2SeqLM.from_pretrained(
 )
 
 # ### 2.3 - Evaluate the Model Qualitatively (Human Evaluation)
-show_original_instruct_summary(
+eva.show_original_instruct_summary(
     dataset, tokenizer, original_model, instruct_model,
     index=example_index_to_summarize
 )
@@ -208,10 +205,9 @@ show_original_instruct_summary(
 dialogues = dataset["test"][0:4]["dialogue"]
 human_baseline_summaries = dataset["test"][0:4]["summary"]
 
-# result_csv = "data/patch-gen-training-results.csv"
 result_csv = config["result_csv"]
 
-results = generate_summaries(
+results = eva.generate_summaries(
     original_model,
     instruct_model,
     tokenizer,
@@ -219,4 +215,4 @@ results = generate_summaries(
     human_baseline_summaries,
     result_csv,
 )
-evaluate_rouge(results)
+eva.evaluate_rouge(results)

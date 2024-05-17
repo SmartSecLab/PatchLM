@@ -2,9 +2,7 @@
 import numpy as np
 import pandas as pd
 import evaluate
-from transformers import (
-    GenerationConfig,
-)
+from transformers import GenerationConfig
 
 # custom imports
 from source.prompt import zero_prompt
