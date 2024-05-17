@@ -21,6 +21,7 @@ dash_line = "=" * 50
 log = util.get_logger()
 config = util.load_config()
 log.info(dash_line)
+log.info(f"Logging  at: {util.log_filename}")
 log.info(f"Config: {config}")
 log.info(dash_line)
 
@@ -159,7 +160,7 @@ prompt_summary(
 # # # Fine-Tune a Generative AI Model for Dialogue Summarization
 log.info("\n\n")
 log.info(dash_line)
-log.info(f"========== Fine-Tune the {model_name} for Patch Generation =======")
+log.info(f"========== Fine-tuning {model_name}=======")
 log.info(dash_line)
 original_model = AutoModelForSeq2SeqLM.from_pretrained(
     model_name, torch_dtype=torch.bfloat16
