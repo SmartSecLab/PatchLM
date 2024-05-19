@@ -8,11 +8,9 @@ from transformers import GenerationConfig
 from source.prompt import zero_prompt
 import source.utility as util
 
-
 # Setup logger
 log = util.get_logger()
 config = util.load_config()
-
 
 rouge = evaluate.load("rouge")
 dash_line = "=" * 50

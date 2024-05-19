@@ -183,14 +183,14 @@ prompt_summary(
 )
 
 # generate_summary(dataset, tokenizer, original_model)
-output_dir = f"models/instruct-model-{str(int(time.time()))}"
+output_dir = f"models/instruct-model-{config['run_id']}"
 
 trainer = fine_tune_model(dataset, model, tokenizer, output_dir)
 
 
 # ### 2.2 - Load the Trained Model
 log.info(dash_line)
-log.info("Load the Trained Model")
+log.info("Loading the fine-tuned model...")
 instruct_model = AutoModelForSeq2SeqLM.from_pretrained(
     output_dir, torch_dtype=torch.bfloat16
 )
@@ -206,7 +206,9 @@ eva.show_original_instruct_summary(
 dialogues = dataset["test"][0:4]["dialogue"]
 human_baseline_summaries = dataset["test"][0:4]["summary"]
 
-result_csv = config["result_csv"]
+# result_csv = config["result_csv"]
+
+result_csv = util.log_dir / f"result-{util.run_id}.csv"
 
 results = eva.generate_summaries(
     original_model,

@@ -9,17 +9,18 @@ from pathlib import Path
 if not hasattr(logging, "logger_configured"):
     logging.logger_configured = True
 
-    # Create file handler which logs even debug messages
-    # log_dir = Path('docs/logs')
-    log_dir = Path("logs")
+    # Create file handler which log even debug messages
+    # log_dir = Path('docs/log')
+    log_dir = Path("log")
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_filename = log_dir / f'run-{time.strftime("%Y-%m-%d--%H-%M")}.log'
+    run_id = time.strftime("%Y-%m-%d--%H-%M")
+    log_filename = log_dir / f"run-{run_id}.log"
 
     # Create a logger
     logger = logging.getLogger("log")
     logger.setLevel(logging.DEBUG)
 
-    # Create file handler which logs even debug messages
+    # Create file handler which log even debug messages
     fh = logging.FileHandler(log_filename)
     fh.setLevel(logging.DEBUG)
 
@@ -62,7 +63,7 @@ def load_config():
     config_file = "config.yaml"
     with open(config_file, "r") as file:
         config = yaml.safe_load(file)
-    config['log_file'] = log_filename
+    config['run_id'] = run_id
     return config
 
 

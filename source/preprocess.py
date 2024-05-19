@@ -1,8 +1,7 @@
-# Generative AI Use Case: Patches Generation
-
+import sqlite3
 import pandas as pd
 from datasets import Dataset, DatasetDict
-import sqlite3
+
 
 # custom functions
 import source.utility as util
@@ -14,6 +13,8 @@ config = util.load_config()
 
 
 db_file = config["preprocess"]["db_file"]
+# List of programming languages to include in the dataset
+# CodeT5 supported: Python, Java, JavaScript, PHP, Ruby, Go, C, and C#
 prog_list = config["preprocess"]["prog_lang"]
 log.info("Programming languages: %s", prog_list)
 
@@ -29,10 +30,10 @@ def load_df_from_sqlite():
     else:
         df = pd.read_sql_query("SELECT * FROM hunk_collection;", conn)
 
-    log.info(f"Dataset shape: {df.shape}")
-
     df = df[df.programming_language.isin(prog_list)].reset_index(drop=True)
-    return df[["code_before", "code_after"]]
+    df = df[["code_before", "code_after"]]
+    log.info(f"Dataset shape: {df.shape}")
+    return df
 
 
 def load_dataset_from_df():
@@ -45,18 +46,6 @@ def load_dataset_from_df():
     train_df = df.iloc[:train_size]
     validation_df = df.iloc[train_size: train_size + val_size]
     test_df = df.iloc[train_size + val_size:]
-
-    def df_to_dicts(df):
-        """Convert DataFrame to list of dictionaries"""
-        return [
-            {
-                "id": i,
-                "dialogue": row["code_before"],
-                "summary": row["code_after"],
-                "topic": "",  # Optional field
-            }
-            for i, row in df.iterrows()
-        ]
 
     # Create Dataset objects
     train_dataset = Dataset.from_dict(
