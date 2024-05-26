@@ -14,7 +14,7 @@ dash_line = "-" * 20
 
 
 def show_few_examples(dataset, num_examples=2):
-    # Print the first few dialogues and summaries
+    # Print the first few vulnerables and summaries
     log.info("Examples in the dataset:")
     example_indices = [2, 4]
     # dash_line = '=' * 50
@@ -24,10 +24,10 @@ def show_few_examples(dataset, num_examples=2):
         log.info(f"Example {i + 1}")
         log.info(dash_line)
         log.info("Vulnerable code:")
-        log.info(dataset["test"][index]["dialogue"])
+        log.info(dataset["test"][index]["vulnerable"])
         log.info(dash_line)
         log.info("BASELINE PATCH:")
-        log.info(dataset["test"][index]["summary"])
+        log.info(dataset["test"][index]["fix"])
         log.info(dash_line)
         log.info()
 
@@ -36,41 +36,41 @@ def show_few_examples(dataset, num_examples=2):
 
 
 def zero_prompt(dataset, index=2):
-    dialogue = dataset["test"][index]["dialogue"]
+    vulnerable = dataset["test"][index]["vulnerable"]
     return f"""
     Vulerable program code:
 
-    {dialogue}
+    {vulnerable}
 
     Patch of the program is:
     """
 
 
-def one_few_prompt(dataset, example_indices, example_index_to_summarize):
+def one_few_prompt(dataset, example_indices, example_index_to_fix):
     """Construct the prompt to perform one shot inference:"""
     prompt = ""
     for index in example_indices:
-        dialogue = dataset["test"][index]["dialogue"]
-        summary = dataset["test"][index]["summary"]
+        vulnerable = dataset["test"][index]["vulnerable"]
+        fix = dataset["test"][index]["fix"]
 
-        # The stop sequence '{summary}\n\n\n' is important for FLAN-T5. Other models may have their own preferred stop sequence.
+        # The stop sequence '{fix}\n\n\n' is important for FLAN-T5. Other models may have their own preferred stop sequence.
         prompt += f"""
                     Vulerable C program:
 
-                    {dialogue}
+                    {vulnerable}
 
                     Patch of the program is:
 
-                    {summary}
+                    {fix}
 
                     """
 
-    dialogue = dataset["test"][example_index_to_summarize]["dialogue"]
+    vulnerable = dataset["test"][example_index_to_fix]["vulnerable"]
 
     prompt += f"""
                 Vulerable program code:
 
-                {dialogue}
+                {vulnerable}
 
                 Patch of the program is:
                 """
@@ -79,14 +79,14 @@ def one_few_prompt(dataset, example_indices, example_index_to_summarize):
 
 
 def without_prompt(dataset, index=2):
-    dialogue = dataset["test"][index]["dialogue"]
-    return dialogue
+    vulnerable = dataset["test"][index]["vulnerable"]
+    return vulnerable
 
 
-def generate_summary(prompt, tokenizer, model, gen_config=None):
+def generate_fix(prompt, tokenizer, model, gen_config=None):
     """
-    This line defines a function called generate_summary that takes four parameters:
-    prompt: The text to be summarized.
+    This line defines a function called generate_fix that takes four parameters:
+    prompt: The text to be fixed.
     tokenizer: A tokenizer object that converts text into numerical tokens, usually to be processed by a model.
     model: A language model that generates text. This could be something like GPT (Generative Pre-trained Transformer) model.
     gen_config: Optional configurations for the text generation process.
@@ -106,35 +106,35 @@ def generate_summary(prompt, tokenizer, model, gen_config=None):
     return output
 
 
-def prompt_summary(
+def prompt_fix(
     dataset,
     tokenizer,
     model,
     gen_config=None,
     shot_type="zero",
     example_indices=None,
-    example_index_to_summarize=2,
+    example_index_to_fix=2,
 
 
 ):
     dash_line = "-" * 25
     if shot_type == "zero":
-        prompt = zero_prompt(dataset, example_index_to_summarize)
+        prompt = zero_prompt(dataset, example_index_to_fix)
     elif shot_type == "one_few":
         prompt = one_few_prompt(dataset, example_indices,
-                                example_index_to_summarize)
+                                example_index_to_fix)
     else:
-        prompt = without_prompt(dataset, example_index_to_summarize)
+        prompt = without_prompt(dataset, example_index_to_fix)
 
     prompt = zero_prompt(dataset)
 
-    summary = dataset["test"][example_index_to_summarize]["summary"]
-    output = generate_summary(prompt, tokenizer, model, gen_config)
+    fix = dataset["test"][example_index_to_fix]["fix"]
+    output = generate_fix(prompt, tokenizer, model, gen_config)
 
     dash_line = "-"*100
     log.info(dash_line)
     log.info(f"INPUT PROMPT:\n{prompt}")
     log.info(dash_line)
-    log.info(f"BASELINE PATCH:\n{summary}\n")
+    log.info(f"BASELINE PATCH:\n{fix}\n")
     log.info(dash_line)
     log.info(f"MODEL GENERATION - ZERO SHOT:\n{output}")

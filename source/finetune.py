@@ -16,15 +16,15 @@ config = util.load_config()
 
 
 def tokenize_function(example, tokenizer):
-    start_prompt = "Summarize the following conversation.\n\n"
-    end_prompt = "\n\nSummary: "
-    prompt = [start_prompt + dialogue +
-              end_prompt for dialogue in example["dialogue"]]
+    start_prompt = "Generate a fix for the following vulnerable code:\n"
+    end_prompt = "\nfix:\n"
+    prompt = [start_prompt + vulnerable +
+              end_prompt for vulnerable in example["vulnerable"]]
     example["input_ids"] = tokenizer(
         prompt, padding="max_length", truncation=True, return_tensors="pt"
     ).input_ids
     example["labels"] = tokenizer(
-        example["summary"], padding="max_length", truncation=True, return_tensors="pt"
+        example["fix"], padding="max_length", truncation=True, return_tensors="pt"
     ).input_ids
 
     return example
@@ -39,9 +39,9 @@ def fine_tune_model(dataset, model, tokenizer, output_dir):
     tokenized_datasets = tokenized_datasets.remove_columns(
         [
             "id",
-            "topic",
-            "dialogue",
-            "summary",
+            "context",
+            "vulnerable",
+            "fix",
         ]
     )
 
