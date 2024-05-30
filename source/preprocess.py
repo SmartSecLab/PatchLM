@@ -22,9 +22,8 @@ log.info("Programming Languages: %s", prog_list)
 def filter_patches(df_patch, max_hunks_per_url=2):
     """Filter URLs with counts less than max_hunks_per_url"""
     # Calculate value counts of 'url' column
-    url_counts = df_patch['url'].value_counts()
-    urls_less_than_two = url_counts[url_counts <=
-                                    max_hunks_per_url].index.tolist()
+    url_counts = df_patch["url"].value_counts()
+    urls_less_than_two = url_counts[url_counts <= max_hunks_per_url].index.tolist()
     df = df_patch[df_patch.url.isin(urls_less_than_two)]
 
     # print(f'Shape of filtered patch data: {df.shape}')
@@ -58,10 +57,17 @@ def load_df_from_sqlite():
         log.info("Debug mode is ON")
         df_hunk = df_hunk.sample(500, random_state=41)
 
-    df = df_hunk[df_hunk.programming_language.isin(
-        prog_list)].reset_index(drop=True)
-    df = df[["code_before", "code_after"]]
+    df = df_hunk[df_hunk.programming_language.isin(prog_list)].reset_index(drop=True)
+
+    # put topic from patch_collection to hunk_collection comparing file_id
+    df = df.merge(df_patch[["file_id", "message"]], on="file_id", how="inner")
+
+    # Rename the columns
+    df = df.rename(columns={"message": "topic"})
+    df = df[["code_before", "code_after", "topic", "programming_language"]]
+
     log.info(f"Dataset shape: {df.shape}")
+    log.info(f"Columns in hunk_collection: \n{df.columns}\n")
     return df
 
 
@@ -73,8 +79,8 @@ def load_dataset_from_df():
     val_size = int(total_rows * 0.1)
 
     train_df = df.iloc[:train_size]
-    validation_df = df.iloc[train_size: train_size + val_size]
-    test_df = df.iloc[train_size + val_size:]
+    validation_df = df.iloc[train_size : train_size + val_size]
+    test_df = df.iloc[train_size + val_size :]
 
     # Create Dataset objects
     train_dataset = Dataset.from_dict(
@@ -82,7 +88,8 @@ def load_dataset_from_df():
             "id": list(train_df.index),
             "vulnerable": train_df["code_before"],
             "fix": train_df["code_after"],
-            "context": [""] * len(train_df),
+            "topic": train_df["topic"],
+            "programming_language": train_df["programming_language"],
         }
     )
     validation_dataset = Dataset.from_dict(
@@ -90,7 +97,8 @@ def load_dataset_from_df():
             "id": list(validation_df.index),
             "vulnerable": validation_df["code_before"],
             "fix": validation_df["code_after"],
-            "context": [""] * len(validation_df),
+            "topic": validation_df["topic"],
+            "programming_language": validation_df["programming_language"],
         }
     )
     test_dataset = Dataset.from_dict(
@@ -98,16 +106,18 @@ def load_dataset_from_df():
             "id": list(test_df.index),
             "vulnerable": test_df["code_before"],
             "fix": test_df["code_after"],
-            "context": [""] * len(test_df),
+            "topic": test_df["topic"],
+            "programming_language": test_df["programming_language"],
         }
     )
 
     # Create DatasetDict with the desired format
     dataset = DatasetDict(
-        {"train": train_dataset,
-         "validation": validation_dataset,
-         "test": test_dataset,
-         }
+        {
+            "train": train_dataset,
+            "validation": validation_dataset,
+            "test": test_dataset,
+        }
     )
     log.info(f'Train shape: {dataset["train"].shape}')
     log.info(f'Validation shape: {dataset["validation"].shape}')

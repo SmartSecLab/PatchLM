@@ -47,6 +47,7 @@ def get_logger():
     """ Return the logger """
     return logging.root
 
+
 # # Setup logger
 # logger = logger_config.setup_logger()
 
@@ -63,14 +64,13 @@ def load_config():
     config_file = "config.yaml"
     with open(config_file, "r") as file:
         config = yaml.safe_load(file)
-    config['run_id'] = run_id
+    config["run_id"] = run_id
     return config
 
 
 def run_os_command(command):
     try:
-        result = subprocess.run(command, shell=True,
-                                capture_output=True, text=True)
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
         if result.returncode == 0:
             print("Output:", result.stdout)
         else:

@@ -12,5 +12,7 @@
 source /cluster/storage/anaconda3/bin/activate 
 conda activate fixme
 
+pip install codebleu
+pip install tabulate
 
 python3 -m source.run

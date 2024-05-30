@@ -18,8 +18,9 @@ config = util.load_config()
 def tokenize_function(example, tokenizer):
     start_prompt = "Generate a fix for the following vulnerable code:\n"
     end_prompt = "\nfix:\n"
-    prompt = [start_prompt + vulnerable +
-              end_prompt for vulnerable in example["vulnerable"]]
+    prompt = [
+        start_prompt + vulnerable + end_prompt for vulnerable in example["vulnerable"]
+    ]
     example["input_ids"] = tokenizer(
         prompt, padding="max_length", truncation=True, return_tensors="pt"
     ).input_ids
@@ -39,7 +40,7 @@ def fine_tune_model(dataset, model, tokenizer, output_dir):
     tokenized_datasets = tokenized_datasets.remove_columns(
         [
             "id",
-            "context",
+            "topic",
             "vulnerable",
             "fix",
         ]
@@ -55,22 +56,24 @@ def fine_tune_model(dataset, model, tokenizer, output_dir):
     log.info(f"Test: {tokenized_datasets['test'].shape}")
     log.info(tokenized_datasets)
 
-    # training_args = TrainingArguments(
-    #     output_dir=output_dir,
-    #     learning_rate=1e-5,
-    #     num_train_epochs=2,
-    #     weight_decay=0.01,
-    #     logging_steps=1,
-    #     max_steps=1
-    # )
-    training_args = TrainingArguments(
-        output_dir=output_dir,
-        learning_rate=float(config["fine_tuning"]["learning_rate"]),
-        num_train_epochs=config["fine_tuning"]["num_train_epochs"],
-        weight_decay=config["fine_tuning"]["weight_decay"],
-        logging_steps=config["fine_tuning"]["logging_steps"],
-        max_steps=config["fine_tuning"]["max_steps"],
-    )
+    if config["debug_mode"] is False:
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            learning_rate=float(config["fine_tuning"]["learning_rate"]),
+            num_train_epochs=config["fine_tuning"]["num_train_epochs"],
+            weight_decay=config["fine_tuning"]["weight_decay"],
+            logging_steps=config["fine_tuning"]["logging_steps"],
+            max_steps=config["fine_tuning"]["max_steps"],
+        )
+    else:
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            learning_rate=float(config["fine_tuning"]["learning_rate"]),
+            num_train_epochs=1,
+            weight_decay=config["fine_tuning"]["weight_decay"],
+            logging_steps=1,
+            max_steps=1,
+        )
 
     trainer = Trainer(
         model=model,

@@ -114,15 +114,12 @@ def prompt_fix(
     shot_type="zero",
     example_indices=None,
     example_index_to_fix=2,
-
-
 ):
     dash_line = "-" * 25
     if shot_type == "zero":
         prompt = zero_prompt(dataset, example_index_to_fix)
     elif shot_type == "one_few":
-        prompt = one_few_prompt(dataset, example_indices,
-                                example_index_to_fix)
+        prompt = one_few_prompt(dataset, example_indices, example_index_to_fix)
     else:
         prompt = without_prompt(dataset, example_index_to_fix)
 
@@ -131,7 +128,7 @@ def prompt_fix(
     fix = dataset["test"][example_index_to_fix]["fix"]
     output = generate_fix(prompt, tokenizer, model, gen_config)
 
-    dash_line = "-"*100
+    dash_line = "-" * 100
     log.info(dash_line)
     log.info(f"INPUT PROMPT:\n{prompt}")
     log.info(dash_line)
