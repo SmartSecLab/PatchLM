@@ -1,6 +1,6 @@
 base_model: Salesforce/codet5-base
 # base_model: Salesforce/codet5p-220m
-debug_mode: True
+debug_mode: False
 #
 generation:
   max_new_tokens: 512
@@ -18,13 +18,13 @@ fine_tuning:
   max_steps: 100
 #
 preprocess:
-  db_file: data/FixMe-v2.db
+  db_file: data/FixMe-v1.db
   max_hunks_per_url: 1
   # CodeT5 supported: Python, Java, JavaScript, PHP, Ruby, Go, C, and C#
   prog_lang: # list of programming languages
     - C
     - C++
-    - Python
+    # - Python
     # - Java
     # - JavaScript
     # - PHP

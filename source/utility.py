@@ -10,14 +10,13 @@ if not hasattr(logging, "logger_configured"):
     logging.logger_configured = True
 
     # Create file handler which log even debug messages
-    # log_dir = Path('docs/log')
-    log_dir = Path("log")
+    log_dir = Path("logs")
     log_dir.mkdir(parents=True, exist_ok=True)
-    run_id = time.strftime("%Y-%m-%d--%H-%M")
+    run_id = time.strftime("%Y-%m-%d--%H-%M-%S")
     log_filename = log_dir / f"run-{run_id}.log"
 
     # Create a logger
-    logger = logging.getLogger("log")
+    logger = logging.getLogger("logs")
     logger.setLevel(logging.DEBUG)
 
     # Create file handler which log even debug messages
@@ -70,7 +69,8 @@ def load_config():
 
 def run_os_command(command):
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        result = subprocess.run(command, shell=True,
+                                capture_output=True, text=True)
         if result.returncode == 0:
             print("Output:", result.stdout)
         else:
