@@ -38,7 +38,7 @@ def show_few_examples(dataset, num_examples=2):
 def zero_prompt(dataset, index=2):
     vulnerable = dataset["test"][index]["vulnerable"]
     return f"""
-    Vulerable program code:
+    Vulnerable program code:
 
     {vulnerable}
 
@@ -55,7 +55,7 @@ def one_few_prompt(dataset, example_indices, example_index_to_fix):
 
         # The stop sequence '{fix}\n\n\n' is important for FLAN-T5. Other models may have their own preferred stop sequence.
         prompt += f"""
-                    Vulerable C program:
+                    Vulnerable C program:
 
                     {vulnerable}
 
@@ -68,7 +68,7 @@ def one_few_prompt(dataset, example_indices, example_index_to_fix):
     vulnerable = dataset["test"][example_index_to_fix]["vulnerable"]
 
     prompt += f"""
-                Vulerable program code:
+                Vulnerable program code:
 
                 {vulnerable}
 
