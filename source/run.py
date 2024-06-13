@@ -33,12 +33,14 @@ dataset = load_dataset_from_df()
 model_name = config["base_model"]
 
 if config["generation"]["tokenizer"] == "roberta":
-    tokenizer = RobertaTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer = RobertaTokenizer.from_pretrained(
+        model_name, trust_remote_code=True)
 else:
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
 log.info("Tokenizer loaded successfully!")
 
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name, trust_remote_code=True)
+model = AutoModelForSeq2SeqLM.from_pretrained(
+    model_name, trust_remote_code=True)
 # model = T5ForConditionalGeneration.from_pretrained(model_name)
 log.info("Model loaded successfully!")
 log.info(f"Original Model: {model_name}")
@@ -195,7 +197,8 @@ instruct_model = AutoModelForSeq2SeqLM.from_pretrained(
 
 # ### 2.3 - Evaluate the Model Qualitatively (Human Evaluation)
 eva.show_original_instruct_fix(
-    dataset, tokenizer, original_model, instruct_model, index=example_index_to_fix
+    dataset, tokenizer, original_model, instruct_model,
+    index=example_index_to_fix
 )
 
 
@@ -217,7 +220,7 @@ log.info(dash_line)
 log.info("Evaluating the models...")
 log.info("Calculating ROUGE scores...")
 eva.evaluate_rouge(results)
-log.info("Calculating ROUGE scores...")
+log.info("Calculating BLEU scores...")
 eva.evaluate_bleu(results)
 
 log.info(dash_line)
