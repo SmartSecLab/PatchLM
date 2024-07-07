@@ -34,7 +34,9 @@ model_name = config["base_model"]
 
 if config["generation"]["tokenizer"] == "roberta":
     tokenizer = RobertaTokenizer.from_pretrained(
-        model_name, trust_remote_code=True)
+        model_name,
+        trust_remote_code=True,
+    )
 else:
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
 log.info("Tokenizer loaded successfully!")
