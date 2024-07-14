@@ -41,8 +41,7 @@ else:
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
 log.info("Tokenizer loaded successfully!")
 
-model = AutoModelForSeq2SeqLM.from_pretrained(
-    model_name, trust_remote_code=True)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name, trust_remote_code=True)
 # model = T5ForConditionalGeneration.from_pretrained(model_name)
 log.info("Model loaded successfully!")
 log.info(f"Original Model: {model_name}")
@@ -199,8 +198,7 @@ instruct_model = AutoModelForSeq2SeqLM.from_pretrained(
 
 # ### 2.3 - Evaluate the Model Qualitatively (Human Evaluation)
 eva.show_original_instruct_fix(
-    dataset, tokenizer, original_model, instruct_model,
-    index=example_index_to_fix
+    dataset, tokenizer, original_model, instruct_model, index=example_index_to_fix
 )
 
 

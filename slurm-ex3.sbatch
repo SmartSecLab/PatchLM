@@ -21,6 +21,7 @@ which python3
 python3 --version
 
 # srun python3 -m src.run
-python3 -m source.run
+# python3 -m source.run
+python3 -m codellama
 
 echo "Job ended at:" `date +"%Y-%m-%d %H:%M:%S"`
