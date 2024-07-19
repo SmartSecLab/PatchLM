@@ -36,8 +36,6 @@ print(f"Available device: {device}")
 
 # # Load the dataset
 
-# +
-
 # Load ir1xor1
 dataset = load_dataset("ASSERT-KTH/repairllama-datasets", "ir1xor1")
 # Load irXxorY
@@ -69,15 +67,15 @@ print(dataset)
 # most lightweight model of CodeLlama for instruction prompt
 base_model = "codellama/CodeLlama-7b-Instruct-hf"
 # base_model = '/Users/guru/research/LLMs/CodeLlama-70-Instruct-hf'
-tokenizer = AutoTokenizer.from_pretrained(base_model, force_download=True)
 model = AutoModelForCausalLM.from_pretrained(
     base_model,
-    load_in_8bit=True,
+    # load_in_8bit=True,
     torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
     device_map="auto",
 )
 
 # # Tokenization
+tokenizer = AutoTokenizer.from_pretrained(base_model, force_download=True)
 
 # +
 tokenizer.add_eos_token = True
@@ -130,21 +128,36 @@ You must output the fixed version of the code snippet.
 
 ### Response:
 """
-    return tokenize(full_prompt)
+    return full_prompt
 
 
 # -
 
 # Reformat to prompt and tokenize each sample:
+debug = True  # set to False to process the entire dataset
+train_dataset = dataset['train']
+val_dataset = dataset['test']
 
-tokenized_train_dataset = dataset.map(generate_and_tokenize_prompt)
-dataset["test"].map(generate_and_tokenize_prompt)
+if debug:
+    train_dataset = train_dataset.shuffle(seed=42).select(range(20))
+    val_dataset = val_dataset.shuffle(seed=42).select(range(10))
 
-# # Setup Lora
+tokenized_train_dataset = train_dataset.map(generate_and_tokenize_prompt)
+tokenized_val_dataset = train_dataset.map(generate_and_tokenize_prompt)
 
-# +
+# # Check the model performance
+device = "cuda" if torch.cuda.is_available() else "cpu"
+eval_prompt = generate_eval_prompt(dataset["test"][0])
+
+model_input = tokenizer(eval_prompt, return_tensors="pt").to(device)
+
+model.eval()
+with torch.no_grad():
+    print(tokenizer.decode(model.generate(**model_input,
+          max_new_tokens=200)[0], skip_special_tokens=True))
 
 
+# # Training
 # +
 model.train()  # put model back into training mode
 # model = prepare_model_for_int8_training(model)
@@ -177,6 +190,10 @@ if resume_from_checkpoint:
     else:
         print(f"Checkpoint {resume_from_checkpoint} not found")
 
+# configure wandb logging if you want to use it
+# wandb_project = "patchT5"
+# if len(wandb_project) > 0:
+#     os.environ["WANDB_PROJECT"] = wandb_project
 
 if torch.cuda.device_count() > 1:
     # keeps Trainer from trying its own DataParallelism when more than 1 gpu is available
@@ -209,9 +226,9 @@ training_args = TrainingArguments(
     # ddp_find_unused_parameters=False if ddp else None,
     # group sequences of roughly the same length together to speed up training
     group_by_length=True,
-    report_to="wandb",  # if use_wandb else "none",
+    report_to="none",  # "wandb",  # if use_wandb else "none",
     # if use_wandb else None,
-    run_name=f"codellama-{datetime.now().strftime('%Y-%m-%d-%H-%M')}",
+    run_name=f"codellama-{datetime.now().strftime('%Y-%m-%d-%H-%M')}"
 )
 
 trainer = Trainer(
@@ -243,16 +260,19 @@ trainer.train()
 # base_model = "codellama/CodeLlama-7b-hf"
 model = AutoModelForCausalLM.from_pretrained(
     base_model,
-    load_in_8bit=True,
+    # load_in_8bit=True,
     torch_dtype=torch.float16,
     device_map="auto",
 )
 tokenizer = AutoTokenizer.from_pretrained(base_model)
 
-
+# To load a fine-tuned Lora/Qlora adapter use PeftModel.from_pretrained.
+# output_dir should be something containing an adapter_config.json and adapter_model.bin:
 model = PeftModel.from_pretrained(model, output_dir)
 
 
+# 8. Evaluate the model
+eval_prompt = generate_eval_prompt(dataset["test"][0])
 model_input = tokenizer(eval_prompt, return_tensors="pt").to("cuda")
 
 model.eval()
