@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -p dgx2q
-#SBATCH  --job-name=T5
+#SBATCH  --job-name=codellama
 #SBATCH -n 1
 #SBATCH --gres=gpu:1
 #SBATCH --time 01-00:00:00    # time (D-HH:MM:SS)
@@ -16,7 +16,8 @@ module load slurm/20.02.7
 # module load python-mpi4py-3.0.3
 # module list
 
-conda activate patch
+source venv/bin/activate
+# conda activate patch
 which python3
 python3 --version
 
