@@ -37,7 +37,8 @@ print(f"Available device: {device}")
 # # Load the dataset
 
 # Load ir1xor1
-dataset = load_dataset("ASSERT-KTH/repairllama-datasets", "ir1xor1")
+dataset = load_dataset("ASSERT-KTH/repairllama-datasets",
+                       "ir1xor1", cache_dir="data/repairllama")
 # Load irXxorY
 # dataset = load_dataset("ASSERT-KTH/repairllama-dataset", "irXxorY")
 
@@ -60,10 +61,15 @@ def prepare_examples(dataset):
     return dataset
 
 
+print('='*100)
+print('Loading the dataset...')
 dataset = prepare_examples(dataset)
 print(dataset)
-# -
+print('='*100)
 
+
+# # Load the model
+print('Loading the base model...')
 # most lightweight model of CodeLlama for instruction prompt
 base_model = "codellama/CodeLlama-7b-Instruct-hf"
 # base_model = '/Users/guru/research/LLMs/CodeLlama-70-Instruct-hf'
@@ -71,11 +77,20 @@ model = AutoModelForCausalLM.from_pretrained(
     base_model,
     # load_in_8bit=True,
     torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-    device_map="auto",
+    device_map="auto" if torch.cuda.is_available() else "cpu",
+    force_download=True,
+    # resume_download=True,
+    # local_files_only=True,
+    # cache_dir="model/codellamma",
 )
 
 # # Tokenization
-tokenizer = AutoTokenizer.from_pretrained(base_model, force_download=True)
+tokenizer = AutoTokenizer.from_pretrained(
+    base_model,
+    # resume_download=True,
+    force_download=True,
+    # cache_dir="model/codellamma",
+)
 
 # +
 tokenizer.add_eos_token = True
@@ -146,7 +161,6 @@ tokenized_train_dataset = train_dataset.map(generate_and_tokenize_prompt)
 tokenized_val_dataset = train_dataset.map(generate_and_tokenize_prompt)
 
 # # Check the model performance
-device = "cuda" if torch.cuda.is_available() else "cpu"
 eval_prompt = generate_eval_prompt(dataset["test"][0])
 
 model_input = tokenizer(eval_prompt, return_tensors="pt").to(device)
@@ -202,8 +216,8 @@ if torch.cuda.device_count() > 1:
 
 
 # 6. Training arguments
-batch_size = 128
-per_device_train_batch_size = 32
+batch_size = 16  # 128
+per_device_train_batch_size = 4  # 32
 gradient_accumulation_steps = batch_size // per_device_train_batch_size
 output_dir = "patch-code-llama"
 
