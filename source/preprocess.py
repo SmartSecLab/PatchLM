@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 from datasets import Dataset, DatasetDict
-
+from datasets import load_dataset
 
 # custom functions
 import source.utility as util
@@ -23,7 +23,8 @@ def filter_patches(df_patch, max_hunks_per_url=2):
     """Filter URLs with counts less than max_hunks_per_url"""
     # Calculate value counts of 'url' column
     url_counts = df_patch["url"].value_counts()
-    urls_less_than_two = url_counts[url_counts <= max_hunks_per_url].index.tolist()
+    urls_less_than_two = url_counts[url_counts <=
+                                    max_hunks_per_url].index.tolist()
     df = df_patch[df_patch.url.isin(urls_less_than_two)]
 
     # print(f'Shape of filtered patch data: {df.shape}')
@@ -57,7 +58,8 @@ def load_df_from_sqlite():
         log.info("Debug mode is ON")
         df_hunk = df_hunk.sample(500, random_state=41)
 
-    df = df_hunk[df_hunk.programming_language.isin(prog_list)].reset_index(drop=True)
+    df = df_hunk[df_hunk.programming_language.isin(
+        prog_list)].reset_index(drop=True)
 
     # put topic from patch_collection to hunk_collection comparing file_id
     df = df.merge(df_patch[["file_id", "message"]], on="file_id", how="inner")
@@ -79,8 +81,8 @@ def load_dataset_from_df():
     val_size = int(total_rows * 0.1)
 
     train_df = df.iloc[:train_size]
-    validation_df = df.iloc[train_size : train_size + val_size]
-    test_df = df.iloc[train_size + val_size :]
+    validation_df = df.iloc[train_size: train_size + val_size]
+    test_df = df.iloc[train_size + val_size:]
 
     # Create Dataset objects
     train_dataset = Dataset.from_dict(
@@ -122,4 +124,38 @@ def load_dataset_from_df():
     log.info(f'Train shape: {dataset["train"].shape}')
     log.info(f'Validation shape: {dataset["validation"].shape}')
     log.info(f'Test shape: {dataset["test"].shape}')
+    return dataset
+
+
+# load repairllama dataset
+def add_question(example):
+    """ Add a new feature- question to the dataset """
+    if "question" not in example:
+        example[
+            "question"
+        ] = "What is the fix version of the code for the following vulnerability?"
+    return example
+
+
+def prepare_examples(dataset):
+    """ Similarize the dataset by adding a question to the dataset  and renaming the columns"""
+    dataset = dataset.map(add_question)
+    # rename the columns
+    dataset = dataset.rename_column("input", "context")
+    dataset = dataset.rename_column("output", "answer")
+    return dataset
+
+
+def load_repairllama_dataset():
+    """ Load the repairllama dataset """
+    dataset = load_dataset(
+        "ASSERT-KTH/repairllama-datasets", "ir1xor1", cache_dir="data/repairllama"
+    )
+    # Load irXxorY
+    # dataset = load_dataset("ASSERT-KTH/repairllama-dataset", "irXxorY")
+    print("=" * 100)
+    print("Loading the dataset...")
+    dataset = prepare_examples(dataset)
+    print(dataset)
+    print("=" * 100)
     return dataset
