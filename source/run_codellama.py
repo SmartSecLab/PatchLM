@@ -4,6 +4,7 @@ import json
 import os
 from contextlib import nullcontext
 from datetime import datetime
+from functools import partial
 
 import datasets
 import torch
@@ -16,7 +17,23 @@ from transformers import (AutoModelForCausalLM, AutoTokenizer,
                           TrainerCallback, TrainingArguments,
                           default_data_collator)
 
+import source.evaluate as eva
+import source.utility as util
+from source.finetune import fine_tune_model
 from source.preprocess import load_repairllama_dataset
+from source.prompt import (generate_and_tokenize_prompt_codellama,
+                           generate_eval_prompt_codellama, prompt_fix)
+
+dash_line = "=" * 50
+
+# Setup logger
+log = util.get_logger()
+config = util.load_config()
+log.info(dash_line)
+log.info(f"Logging  at: {util.log_filename}")
+log.info(f"Config: {config}")
+log.info(dash_line)
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using available device: {device}")
@@ -25,83 +42,37 @@ print(f"Using available device: {device}")
 print("Loading the base model...")
 
 
-base_model = "codellama/CodeLlama-7b-Instruct-hf"
-model = AutoModelForCausalLM.from_pretrained(
-    base_model,
-    # torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-    device_map="auto" if torch.cuda.is_available() else "cpu",
-    force_download=True,
-    trust_remote_code=True,
-    load_in_8bit=True,
-    # resume_download=True,
-    # local_files_only=True,
-    # cache_dir="model/codellamma",
-)
-
-tokenizer = AutoTokenizer.from_pretrained(
-    base_model,
-    # resume_download=True,
-    force_download=True,
-    trust_remote_code=True,
-    # cache_dir="model/codellamma",
-)
-
-model.config.use_cache = False
-
-tokenizer.pad_token = tokenizer.eos_token
-tokenizer.padding_side = "right"
-
-
-def tokenize(prompt):
-    result = tokenizer(
-        prompt,
-        truncation=True,
-        max_length=512,
-        padding='max_length',
-        return_tensors=None,
+def load_codellama_model(config):
+    """ Load the CodeLlama model"""
+    base_model = config["base_model"]
+    model = AutoModelForCausalLM.from_pretrained(
+        base_model,
+        # torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        device_map="auto" if torch.cuda.is_available() else "cpu",
+        force_download=True,
+        trust_remote_code=True,
+        load_in_8bit=True,
+        # resume_download=True,
+        # local_files_only=True,
+        # cache_dir="model/codellamma",
     )
 
-    # "self-supervised learning" means the labels are also the inputs:
-    result["labels"] = result["input_ids"].copy()
+    tokenizer = AutoTokenizer.from_pretrained(
+        base_model,
+        # resume_download=True,
+        force_download=True,
+        trust_remote_code=True,
+        # cache_dir="model/codellamma",
+    )
 
-    return result
+    model.config.use_cache = False
 
-
-def generate_and_tokenize_prompt_codellama(data_point):
-    full_prompt = f"""You are a powerful code-fixing model. 
-    Your job is to analyze and fix vulnerabilities in code. 
-    You are given a snippet of vulnerable code and its context.
-
-You must output the fixed version of the code snippet.
-
-### Input:
-{data_point["question"]}
-
-### Context:
-{data_point["context"]}
-
-### Response:
-{data_point["answer"]}
-"""
-    return tokenize(full_prompt)
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
+    return model, tokenizer
 
 
-def generate_eval_prompt_codellama(data_point):
-    full_prompt = f"""You are a powerful code-fixing model. 
-    Your job is to analyze and fix vulnerabilities in code. 
-    You are given a snippet of vulnerable code and its context.
-
-You must output the fixed version of the code snippet.
-
-### Input:
-{data_point["question"]}
-
-### Context:
-{data_point["context"]}
-
-### Response:
-"""
-    return full_prompt
+model, tokenizer = load_codellama_model(config)
 
 
 dataset = load_repairllama_dataset()
@@ -114,10 +85,12 @@ if debug:
     train_dataset = train_dataset.shuffle(seed=42).select(range(200))
     val_dataset = val_dataset.shuffle(seed=42).select(range(100))
 
-tokenized_train_dataset = train_dataset.map(
-    generate_and_tokenize_prompt_codellama)
-tokenized_val_dataset = train_dataset.map(
-    generate_and_tokenize_prompt_codellama)
+
+partial_generate_and_tokenize = partial(
+    generate_and_tokenize_prompt_codellama, tokenizer=tokenizer)
+
+tokenized_train_dataset = train_dataset.map(partial_generate_and_tokenize)
+tokenized_val_dataset = train_dataset.map(partial_generate_and_tokenize)
 
 # # Check the model performance
 eval_sample = dataset["test"][1]
@@ -173,12 +146,13 @@ if torch.cuda.device_count() > 1:
 
 
 # 6. Training arguments
-num_train_epochs = 5
-batch_size = 8  # 128
-per_device_train_batch_size = 4  # 32
+num_train_epochs = config['fine_tuning']['num_train_epochs']
+batch_size = config['fine_tuning']['batch_size']
+per_device_train_batch_size = config['fine_tuning']['per_device_train_bsize']
 gradient_accumulation_steps = batch_size // per_device_train_batch_size
 
-output_dir = "PatchLlama-" + str(num_train_epochs)
+output_dir = os.path.join(
+    config['fine_tuning']['output_dir'], "PatchLlama-" + str(num_train_epochs))
 
 
 training_args = TrainingArguments(
@@ -189,7 +163,7 @@ training_args = TrainingArguments(
     optim="paged_adamw_32bit",
     save_steps=5,
     logging_steps=5,
-    learning_rate=2e-4,
+    learning_rate=config['fine_tuning']['learning_rate'],
     evaluation_strategy="steps",
     eval_steps=5,
     fp16=True,

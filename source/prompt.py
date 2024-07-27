@@ -135,3 +135,55 @@ def prompt_fix(
     log.info(f"BASELINE PATCH:\n{fix}\n")
     log.info(dash_line)
     log.info(f"MODEL GENERATION - ZERO SHOT:\n{output}")
+
+
+def tokenize(prompt, tokenizer):
+    result = tokenizer(
+        prompt,
+        truncation=True,
+        max_length=512,
+        padding='max_length',
+        return_tensors=None,
+    )
+
+    # "self-supervised learning" means the labels are also the inputs:
+    result["labels"] = result["input_ids"].copy()
+
+    return result
+
+
+def generate_and_tokenize_prompt_codellama(data_point, tokenizer):
+    full_prompt = f"""You are a powerful code-fixing model. 
+    Your job is to analyze and fix vulnerabilities in code. 
+    You are given a snippet of vulnerable code and its context.
+
+You must output the fixed version of the code snippet.
+
+### Input:
+{data_point["question"]}
+
+### Context:
+{data_point["context"]}
+
+### Response:
+{data_point["answer"]}
+"""
+    return tokenize(full_prompt, tokenizer)
+
+
+def generate_eval_prompt_codellama(data_point):
+    full_prompt = f"""You are a powerful code-fixing model. 
+    Your job is to analyze and fix vulnerabilities in code. 
+    You are given a snippet of vulnerable code and its context.
+
+You must output the fixed version of the code snippet.
+
+### Input:
+{data_point["question"]}
+
+### Context:
+{data_point["context"]}
+
+### Response:
+"""
+    return full_prompt
