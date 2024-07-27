@@ -162,7 +162,8 @@ def show_rouge_scores(original_model_results, instruct_model_results):
     df["Improvement"] = df["Instruct"] - df["Base"]
     df = df.round(2).applymap(lambda x: f"{x:.2f}%")
     log.info(
-        f"The ROUGE scores improved: \n{tabulate(df, headers='keys', tablefmt='psql')}"
+        f"The ROUGE scores improved: \n{
+            tabulate(df, headers='keys', tablefmt='psql')}"
     )
 
 
@@ -174,14 +175,14 @@ def evaluate_rouge(results):
 
     original_model_results = rouge.compute(
         predictions=original_model_fixes,
-        references=human_baseline_fixes[0 : len(original_model_fixes)],
+        references=human_baseline_fixes[0: len(original_model_fixes)],
         use_aggregator=True,
         use_stemmer=True,
     )
 
     instruct_model_results = rouge.compute(
         predictions=instruct_model_fixes,
-        references=human_baseline_fixes[0 : len(instruct_model_fixes)],
+        references=human_baseline_fixes[0: len(instruct_model_fixes)],
         use_aggregator=True,
         use_stemmer=True,
     )
@@ -214,7 +215,8 @@ def calc_codebleu_scores(
         corresponding pair of reference and prediction.
     """
     scores = [
-        calc_codebleu([ref], [pred], lang=lg, weights=weights, tokenizer=tokenizer)
+        calc_codebleu([ref], [pred], lang=lg,
+                      weights=weights, tokenizer=tokenizer)
         for ref, pred, lg in zip(references, predictions, langs)
     ]
     return scores
@@ -239,7 +241,8 @@ def show_bleu_scores(original_bleu_scores, instruct_bleu_scores):
     df = df.round(2).applymap(lambda x: f"{x:.2f}%")
 
     log.info(
-        f"Weighted average BLEU scores improved: \n{tabulate(df, headers='keys', tablefmt='psql')}"
+        f"Weighted average BLEU scores improved: \n{
+            tabulate(df, headers='keys', tablefmt='psql')}"
     )
 
 
@@ -251,7 +254,8 @@ def evaluate_bleu(results):
         instruct_model_fixes = results["instruct_model_fixes"].tolist()
         # guessland requires lower case the pl and replace 'c++' with 'cpp'
         langs = (
-            results["programming_language"].str.lower().replace("c++", "cpp").tolist()
+            results["programming_language"].str.lower().replace("c++",
+                                                                "cpp").tolist()
         )
 
         original_bleu_scores = calc_codebleu_scores(

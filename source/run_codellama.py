@@ -19,7 +19,7 @@ from transformers import (AutoModelForCausalLM, AutoTokenizer,
 
 import source.evaluate as eva
 import source.utility as util
-from source.finetune import fine_tune_model
+from source.finetune import fine_tune_model, fine_tune_codellama_model, create_peft_config
 from source.preprocess import load_repairllama_dataset
 from source.prompt import (generate_and_tokenize_prompt_codellama,
                            generate_eval_prompt_codellama, prompt_fix)
@@ -77,28 +77,27 @@ model, tokenizer = load_codellama_model(config)
 
 dataset = load_repairllama_dataset()
 
-debug = False  # set to False to process the entire dataset
-train_dataset = dataset["train"]
-val_dataset = dataset["test"]
 
-if debug:
-    train_dataset = train_dataset.shuffle(seed=42).select(range(200))
-    val_dataset = val_dataset.shuffle(seed=42).select(range(100))
+def split_train_val_tokenize(dataset, tokenizer, debug=False):
+    """ Split the dataset into train, validation and test sets"""
+    train_dataset = dataset["train"]
+    val_dataset = dataset["test"]
 
+    if debug:
+        train_dataset = train_dataset.shuffle(seed=42).select(range(200))
+        val_dataset = val_dataset.shuffle(seed=42).select(range(100))
 
-partial_generate_and_tokenize = partial(
-    generate_and_tokenize_prompt_codellama, tokenizer=tokenizer)
+    partial_generate_and_tokenize = partial(
+        generate_and_tokenize_prompt_codellama, tokenizer=tokenizer)
 
-tokenized_train_dataset = train_dataset.map(partial_generate_and_tokenize)
-tokenized_val_dataset = train_dataset.map(partial_generate_and_tokenize)
-
-# # Check the model performance
-eval_sample = dataset["test"][1]
-
-print("Evaluating the base model...")
+    tokenized_train_dataset = train_dataset.map(partial_generate_and_tokenize)
+    tokenized_val_dataset = train_dataset.map(partial_generate_and_tokenize)
+    return tokenized_train_dataset, tokenized_val_dataset
 
 
 def evaluate_model(model, tokenizer, eval_sample):
+    """ Evaluate the model"""
+    print("Evaluating the base model...")
     eval_prompt = generate_eval_prompt_codellama(eval_sample)
     model_input = tokenizer(eval_prompt, return_tensors="pt").to(device)
 
@@ -110,94 +109,27 @@ def evaluate_model(model, tokenizer, eval_sample):
             skip_special_tokens=True,
         )
     print(output)
+    print(f"\nExpected: {eval_sample['fix']}")
+    print(dash_line)
+
+
+tokenized_train_dataset, tokenized_val_dataset = split_train_val_tokenize(
+    dataset, tokenizer, config["debug_mode"])
+
+# # Check the model performance
+eval_sample = dataset["test"][1]
 
 
 evaluate_model(model, tokenizer, eval_sample)
-
-
-def create_peft_config(model):
-    """ Create a PEFT configuration"""
-    peft_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
-        inference_mode=False,
-        r=4,
-        lora_alpha=64,
-        lora_dropout=0.1,
-        target_modules=["q_proj", "v_proj"],
-    )
-
-    # prepare int-8 model for training
-    model = prepare_model_for_int8_training(model)
-    model = get_peft_model(model, peft_config)
-    model.print_trainable_parameters()
-    return model, peft_config
-
 
 model, lora_config = create_peft_config(model)
 
-# configure wandb logging if you want to use it
-# wandb_project = "patchT5"
-# if len(wandb_project) > 0:
-#     os.environ["WANDB_PROJECT"] = wandb_project
-
-if torch.cuda.device_count() > 1:
-    model.is_parallelizable = True
-    model.model_parallel = True
-
-
-# 6. Training arguments
-num_train_epochs = config['fine_tuning']['num_train_epochs']
-batch_size = config['fine_tuning']['batch_size']
-per_device_train_batch_size = config['fine_tuning']['per_device_train_bsize']
-gradient_accumulation_steps = batch_size // per_device_train_batch_size
-
 output_dir = os.path.join(
-    config['fine_tuning']['output_dir'], "PatchLlama-" + str(num_train_epochs))
+    config['fine_tuning']['output_dir'], "PatchLlama-" + str(config['fine_tuning']['num_train_epochs']))
 
 
-training_args = TrainingArguments(
-    output_dir=output_dir,
-    num_train_epochs=num_train_epochs,
-    per_device_train_batch_size=per_device_train_batch_size,
-    gradient_accumulation_steps=gradient_accumulation_steps,
-    optim="paged_adamw_32bit",
-    save_steps=5,
-    logging_steps=5,
-    learning_rate=config['fine_tuning']['learning_rate'],
-    evaluation_strategy="steps",
-    eval_steps=5,
-    fp16=True,
-    bf16=False,
-    group_by_length=True,
-    logging_strategy="steps",
-    save_strategy="no",
-    gradient_checkpointing=False,)
+trainer, model, tokenizer = fine_tune_codellama_model(
+    config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset, output_dir)
 
-
-trainer = Trainer(
-    model=model,
-    train_dataset=tokenized_train_dataset,
-    eval_dataset=tokenized_val_dataset,
-    args=training_args,
-    data_collator=default_data_collator,
-)
-
-old_state_dict = model.state_dict
-model.state_dict = (lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())).__get__(
-    model, type(model)
-)
-
-# Train and save the model
-trainer.train()
-
-trainer.model.save_pretrained(output_dir)
-trainer.save_model(output_dir)
-print("Saved the model to:", output_dir)
-
-# 8. Evaluate the model
 print("Evaluating the fine-tuned model...")
 evaluate_model(model, tokenizer, eval_sample)
-
-print("=" * 50)
-print("Experiment Complete!")
-print("=" * 50)
