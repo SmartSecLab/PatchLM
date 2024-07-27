@@ -1,6 +1,7 @@
 # from peft import PeftModel
 import copy
 import json
+import os
 from contextlib import nullcontext
 from datetime import datetime
 
@@ -8,6 +9,7 @@ import datasets
 import torch
 from peft import (LoraConfig, PeftConfig, TaskType, get_peft_model,
                   prepare_model_for_int8_training)
+from peft.peft_model import get_peft_model_state_dict
 from tqdm import tqdm
 from transformers import (AutoModelForCausalLM, AutoTokenizer,
                           BitsAndBytesConfig, CodeLlamaTokenizer, Trainer,
@@ -16,9 +18,11 @@ from transformers import (AutoModelForCausalLM, AutoTokenizer,
 
 from source.preprocess import load_repairllama_dataset
 
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Available device: {device}")
+
+# Set the env parallelism to True if you have multiple GPUs available
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 print("Loading the base model...")
 # most lightweight model of CodeLlama for instruction prompt
@@ -46,9 +50,6 @@ tokenizer = AutoTokenizer.from_pretrained(
 
 model.config.use_cache = False
 
-# tokenizer.add_eos_token = True
-# tokenizer.pad_token_id = 0
-# tokenizer.padding_side = "left"
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
 
@@ -133,7 +134,7 @@ def evaluate_model(model, tokenizer, eval_sample):
     with torch.no_grad():
         output = tokenizer.decode(
             model.generate(
-                **model_input, max_new_tokens=200, pad_token_id=tokenizer.eos_token_id
+                **model_input, max_new_tokens=512, pad_token_id=tokenizer.eos_token_id
             )[0],
             skip_special_tokens=True,
         )
@@ -168,15 +169,15 @@ model, lora_config = create_peft_config(model)
 # if len(wandb_project) > 0:
 #     os.environ["WANDB_PROJECT"] = wandb_project
 
-# if torch.cuda.device_count() > 1:
-#     model.is_parallelizable = True
-#     model.model_parallel = True
+if torch.cuda.device_count() > 1:
+    model.is_parallelizable = True
+    model.model_parallel = True
 
 
 # 6. Training arguments
-num_train_epochs = 100
-batch_size = 16  # 128
-per_device_train_batch_size = 8  # 32
+num_train_epochs = 5
+batch_size = 8  # 128
+per_device_train_batch_size = 4  # 32
 gradient_accumulation_steps = batch_size // per_device_train_batch_size
 
 output_dir = "PatchLlama-" + str(num_train_epochs)
@@ -188,39 +189,18 @@ training_args = TrainingArguments(
     per_device_train_batch_size=per_device_train_batch_size,
     gradient_accumulation_steps=gradient_accumulation_steps,
     optim="paged_adamw_32bit",
-    save_steps=0,
-    logging_steps=10,
+    save_steps=5,
+    logging_steps=5,
     learning_rate=2e-4,
+    evaluation_strategy="steps",
+    eval_steps=5,
     fp16=True,
     bf16=False,
     group_by_length=True,
     logging_strategy="steps",
     save_strategy="no",
     gradient_checkpointing=False,)
-# training_args = TrainingArguments(
-#     per_device_train_batch_size=per_device_train_batch_size,
-#     gradient_accumulation_steps=gradient_accumulation_steps,
-#     num_train_epochs=2,
-#     warmup_steps=10,
-#     max_steps=20,
-#     learning_rate=2e-4,
-#     fp16=True,
-#     bf16=Fal
-#     logging_steps=10,
-#     optim="paged_adamw_32bit",
-#     evaluation_strategy="steps",  # if val_set_size > 0 else "no",
-#     save_strategy="no",
-#     eval_steps=10,
-#     save_steps=0,
-#     output_dir=output_dir,
-#     # load_best_model_at_end=True,
-#     # ddp_find_unused_parameters=False if ddp else None,
-#     # group sequences of roughly the same length together to speed up training
-#     group_by_length=True,
-#     gradient_checkpointing=False,
-#     report_to="none",  # "wandb",  # if use_wandb else "none",
-#     # run_name=f"codellama-{datetime.now().strftime('%Y-%m-%d-%H-%M')}",
-# )
+
 
 trainer = Trainer(
     model=model,
@@ -228,19 +208,18 @@ trainer = Trainer(
     eval_dataset=tokenized_val_dataset,
     args=training_args,
     data_collator=default_data_collator,
-    # data_collator=DataCollatorForSeq2Seq(
-    #     tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
-    # ),
 )
-# old_state_dict = model.state_dict
-# model.state_dict = (lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())).__get__(
-#     model, type(model)
-# )
+
+old_state_dict = model.state_dict
+model.state_dict = (lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())).__get__(
+    model, type(model)
+)
 
 # Train and save the model
 trainer.train()
 
 trainer.model.save_pretrained(output_dir)
+trainer.save_model(output_dir)
 print("Saved the model to:", output_dir)
 
 # 8. Evaluate the model

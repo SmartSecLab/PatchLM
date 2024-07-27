@@ -3,7 +3,7 @@
 #SBATCH  --job-name=codellama
 #SBATCH -n 1
 #SBATCH --gres=gpu:2
-#SBATCH --time 01-00:00:00    # time (D-HH:MM:SS)
+#SBATCH --time 05-00:00:00    # time (D-HH:MM:SS)
 #SBATCH --output=output/slurm%j.out         # Output file name (%j expands to jobID)
 #SBATCH --error=output/slurm%j.err          # Error file name (%j expands to jobID)
 
