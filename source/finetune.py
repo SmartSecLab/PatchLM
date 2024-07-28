@@ -125,12 +125,13 @@ def create_peft_config(model):
     return model, peft_config
 
 
-def fine_tune_codellama_model(config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset, output_dir):
+def fine_tune_codellama_model(config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset):
     """ Fine-tune the codellama model"""
     if torch.cuda.device_count() > 1:
         model.is_parallelizable = True
         model.model_parallel = True
 
+    output_dir = config['fine_tuning']['output_dir']
     # 6. Training arguments
     num_train_epochs = config['fine_tuning']['num_train_epochs']
     batch_size = config['fine_tuning']['batch_size']
@@ -143,17 +144,18 @@ def fine_tune_codellama_model(config, model, tokenizer, tokenized_train_dataset,
         per_device_train_batch_size=per_device_train_batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,
         optim="paged_adamw_32bit",
-        save_steps=5,
-        logging_steps=5,
-        learning_rate=config['fine_tuning']['learning_rate'],
+        save_steps=100,
+        logging_steps=100,
+        learning_rate=float(config['fine_tuning']['learning_rate']),
         evaluation_strategy="steps",
-        eval_steps=5,
+        eval_steps=100,
         fp16=True,
         bf16=False,
         group_by_length=True,
         logging_strategy="steps",
         save_strategy="no",
-        gradient_checkpointing=False,)
+        gradient_checkpointing=False,
+    )
 
     trainer = Trainer(
         model=model,
@@ -173,7 +175,7 @@ def fine_tune_codellama_model(config, model, tokenizer, tokenized_train_dataset,
 
     trainer.model.save_pretrained(output_dir)
     trainer.save_model(output_dir)
-    print("Fine-Tuning Completed!")
-    print("Model saved to:", output_dir)
-    print("=" * 50)
+    log.info("Fine-Tuning Completed!")
+    log.info("Model saved to:", output_dir)
+    log.info("=" * 50)
     return trainer, model, tokenizer

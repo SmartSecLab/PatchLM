@@ -161,10 +161,8 @@ def show_rouge_scores(original_model_results, instruct_model_results):
     df["Instruct"] = df["Instruct"] * 100
     df["Improvement"] = df["Instruct"] - df["Base"]
     df = df.round(2).applymap(lambda x: f"{x:.2f}%")
-    log.info(
-        f"The ROUGE scores improved: \n{
-            tabulate(df, headers='keys', tablefmt='psql')}"
-    )
+    log.info(f"The ROUGE scores improved:")
+    log.info(f"{tabulate(df, headers='keys', tablefmt='psql')}")
 
 
 def evaluate_rouge(results):
@@ -240,10 +238,8 @@ def show_bleu_scores(original_bleu_scores, instruct_bleu_scores):
     df["Improvement"] = df["Instruct"] - df["Base"]
     df = df.round(2).applymap(lambda x: f"{x:.2f}%")
 
-    log.info(
-        f"Weighted average BLEU scores improved: \n{
-            tabulate(df, headers='keys', tablefmt='psql')}"
-    )
+    log.info("Weighted average BLEU scores improved:")
+    log.info(tabulate(df, headers='keys', tablefmt='psql'))
 
 
 def evaluate_bleu(results):

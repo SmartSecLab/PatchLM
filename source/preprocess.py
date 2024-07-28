@@ -124,6 +124,7 @@ def load_dataset_from_df():
     log.info(f'Train shape: {dataset["train"].shape}')
     log.info(f'Validation shape: {dataset["validation"].shape}')
     log.info(f'Test shape: {dataset["test"].shape}')
+    log.info("=" * 50)
     return dataset
 
 
@@ -153,9 +154,9 @@ def load_repairllama_dataset():
     )
     # Load irXxorY
     # dataset = load_dataset("ASSERT-KTH/repairllama-dataset", "irXxorY")
-    print("=" * 100)
-    print("Loading the dataset...")
+    log.info("=" * 50)
+    log.info("Loading the dataset...")
     dataset = prepare_examples(dataset)
-    print(dataset)
-    print("=" * 100)
+    log.info(dataset)
+    log.info("=" * 50)
     return dataset

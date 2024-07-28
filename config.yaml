@@ -1,5 +1,5 @@
-base_model: Salesforce/codet5-base
-# base_model: codellama/CodeLlama-7b-Instruct-hf
+# base_model: Salesforce/codet5-base
+base_model: codellama/CodeLlama-7b-Instruct-hf
 # most lightweight model of CodeLlama for instruction prompt
 debug_mode: False
 #
@@ -12,10 +12,10 @@ generation:
 #
 fine_tuning:
   output_dir: models
-  learning_rate: 2e-4
-  num_train_epochs: 100
-  batch_size: 8
-  per_device_train_bsize: 4
+  learning_rate: 1e-3
+  num_train_epochs: 5
+  batch_size: 64
+  per_device_train_bsize: 64
   weight_decay: 0.01
   logging_steps: 100
   max_steps: 100

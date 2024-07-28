@@ -1,4 +1,3 @@
-# from peft import PeftModel
 import copy
 import json
 import os
@@ -19,10 +18,12 @@ from transformers import (AutoModelForCausalLM, AutoTokenizer,
 
 import source.evaluate as eva
 import source.utility as util
-from source.finetune import fine_tune_model, fine_tune_codellama_model, create_peft_config
+from source.finetune import (create_peft_config, fine_tune_codellama_model,
+                             fine_tune_model)
 from source.preprocess import load_repairllama_dataset
 from source.prompt import (generate_and_tokenize_prompt_codellama,
                            generate_eval_prompt_codellama, prompt_fix)
+
 
 dash_line = "=" * 50
 
@@ -34,17 +35,15 @@ log.info(f"Logging  at: {util.log_filename}")
 log.info(f"Config: {config}")
 log.info(dash_line)
 
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using available device: {device}")
+log.info(f"Using available device: {device}")
 # os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-print("Loading the base model...")
 
 
 def load_codellama_model(config):
     """ Load the CodeLlama model"""
     base_model = config["base_model"]
+    log.info("Loading the base model...")
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
         # torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
@@ -69,6 +68,8 @@ def load_codellama_model(config):
 
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
+    log.info("Model and tokenizer loaded successfully!")
+    log.info(dash_line)
     return model, tokenizer
 
 
@@ -97,7 +98,7 @@ def split_train_val_tokenize(dataset, tokenizer, debug=False):
 
 def evaluate_model(model, tokenizer, eval_sample):
     """ Evaluate the model"""
-    print("Evaluating the base model...")
+    log.info("Evaluating the base model...")
     eval_prompt = generate_eval_prompt_codellama(eval_sample)
     model_input = tokenizer(eval_prompt, return_tensors="pt").to(device)
 
@@ -108,9 +109,9 @@ def evaluate_model(model, tokenizer, eval_sample):
             )[0],
             skip_special_tokens=True,
         )
-    print(output)
-    print(f"\nExpected: {eval_sample['fix']}")
-    print(dash_line)
+    log.info(output)
+    log.info(f"\nHuman baseline: \n{eval_sample['answer']}\n")
+    log.info(dash_line)
 
 
 tokenized_train_dataset, tokenized_val_dataset = split_train_val_tokenize(
@@ -124,12 +125,16 @@ evaluate_model(model, tokenizer, eval_sample)
 
 model, lora_config = create_peft_config(model)
 
-output_dir = os.path.join(
-    config['fine_tuning']['output_dir'], "PatchLlama-" + str(config['fine_tuning']['num_train_epochs']))
+identifier = "PatchLlama-" + \
+    str(config['fine_tuning']['num_train_epochs']) + 'epoch-' + \
+    datetime.now().strftime("%Y%m%d-%H%M%S")
+
+config['fine_tuning']['output_dir'] = os.path.join(
+    os.path.join(config['fine_tuning']['output_dir'], identifier))
 
 
 trainer, model, tokenizer = fine_tune_codellama_model(
-    config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset, output_dir)
+    config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset)
 
-print("Evaluating the fine-tuned model...")
+log.info("Evaluating the fine-tuned model...")
 evaluate_model(model, tokenizer, eval_sample)
