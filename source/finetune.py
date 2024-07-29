@@ -44,7 +44,7 @@ def tokenize_function(example, tokenizer):
     return example
 
 
-def fine_tune_model(dataset, model, tokenizer, output_dir):
+def fine_tune_codet5_model(dataset, model, tokenizer, output_dir):
     # The dataset actually contains 3 diff splits: train, validation, test.
     # The tokenize_function code is handling all data across all splits in batches.
     tokenized_datasets = dataset.map(

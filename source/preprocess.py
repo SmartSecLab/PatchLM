@@ -124,6 +124,7 @@ def load_dataset_from_df():
     log.info(f'Train shape: {dataset["train"].shape}')
     log.info(f'Validation shape: {dataset["validation"].shape}')
     log.info(f'Test shape: {dataset["test"].shape}')
+    print('Dataset loaded successfully!')
     log.info("=" * 50)
     return dataset
 
