@@ -1,21 +1,10 @@
 # Fine-tune the model on the dataset
 
-import copy
-import json
-import os
-from contextlib import nullcontext
-from datetime import datetime
-from functools import partial
 
-import datasets
 import torch
-from peft import (LoraConfig, PeftConfig, TaskType, get_peft_model,
-                  prepare_model_for_int8_training)
+from peft import (LoraConfig, TaskType, get_peft_model, prepare_model_for_int8_training)
 from peft.peft_model import get_peft_model_state_dict
-from tqdm import tqdm
-from transformers import (AutoModelForCausalLM, AutoTokenizer,
-                          BitsAndBytesConfig, CodeLlamaTokenizer, Trainer,
-                          TrainerCallback, TrainingArguments,
+from transformers import (Trainer, TrainingArguments,
                           default_data_collator)
 
 # custom functions

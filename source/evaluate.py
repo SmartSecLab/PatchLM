@@ -1,5 +1,4 @@
 # ### 2.4 - Evaluate the Model Quantitatively (with ROUGE Metric)
-import numpy as np
 import pandas as pd
 import evaluate
 from transformers import GenerationConfig

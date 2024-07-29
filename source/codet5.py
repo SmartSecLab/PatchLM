@@ -1,5 +1,4 @@
 # Generative AI Use Case: Patches Generation
-import time
 import torch
 from transformers import (
     AutoModelForSeq2SeqLM,
@@ -71,7 +70,6 @@ def generate_prompt_fixes_on_shots(dataset, tokenizer, model):
     # without any prompt engineering. **Prompt engineering** is an act
     # of a human changing the **prompt** (input) to improve the response
     # for a given task.
-    example_indices = [3, 5]
     example_index_to_fix = 2
 
     # ### 2.1 - without Prompt Engineering
@@ -179,7 +177,7 @@ def run_codet5():
 
     output_dir = f"models/instruct-model-{config['run_id']}"
 
-    trainer = fine_tune_codet5_model(dataset, model, tokenizer, output_dir)
+    fine_tune_codet5_model(dataset, model, tokenizer, output_dir)
 
     # ### 2.2 - Load the fine-tuned Model
     log.info(dash_line)
