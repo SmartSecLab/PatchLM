@@ -1,9 +1,8 @@
-
 import torch
 
 import source.utility as util
-from source.run_codellama import load_codellama_model
-from source.run_codet5 import load_codet5_model
+from source.codellama import CodeLlamaModel
+from source.codet5 import CodeT5Model
 
 dash_line = "=" * 50
 
@@ -11,24 +10,27 @@ dash_line = "=" * 50
 log = util.get_logger()
 config = util.load_config()
 log.info(dash_line)
-log.info(f"Logging  at: {util.log_filename}")
+log.info(f"Logging at: {util.log_filename}")
 log.info(f"Config: {config}")
 log.info(dash_line)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 log.info(f"Using available device: {device}")
+config["device"] = device
 # os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 if __name__ == "__main__":
     # Load the CodeLlama model or the CodeT5 model
     if 'codellama' in str(config['base_model']).lower():
-        model, tokenizer = load_codellama_model(config)
+        code_llama = CodeLlamaModel(config, log)
+        code_llama.run_codellama()
 
     elif 'codet5' in str(config['base_model']).lower():
-        model, tokenizer = load_codet5_model(config)
-
+        code_t5 = CodeT5Model(config, log)
+        code_t5.run_codet5()
     else:
         raise ValueError(f"Invalid model name: {config['base_model']}")
+
     log.info(dash_line)
     log.info(f"Model loaded successfully: {config['base_model']}")
     log.info(dash_line)

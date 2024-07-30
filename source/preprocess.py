@@ -1,3 +1,5 @@
+import os
+import requests
 import sqlite3
 import pandas as pd
 from datasets import Dataset, DatasetDict
@@ -38,8 +40,29 @@ def filter_hunks(df_hunk, df_patch):
     return df_hunk
 
 
+def download_file_if_not_exists(file_path, file_url):
+    """
+    Check if the file exists at file_path, if not, download it from file_url.
+    """
+    if not os.path.exists(file_path):
+        log.info(f'Downloading the file from: {file_url}\n')
+        # If not, download the file
+        response = requests.get(file_url)
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        # Write the content to the file
+        with open(file_path, 'wb') as file:
+            file.write(response.content)
+        log.info(f'File downloaded and saved to {file_path}')
+    else:
+        log.info(f'File already exists at {file_path}')
+
+
 def load_df_from_sqlite():
     """Load the dataset from the SQLite database"""
+    file_url = 'https://zenodo.org/records/10955342/files/FixMe-v1.db?download=1'
+    download_file_if_not_exists(db_file, file_url)
+
     conn = sqlite3.connect(db_file)
     df_hunk = pd.read_sql_query("SELECT * FROM hunk_collection;", conn)
     df_patch = pd.read_sql_query("SELECT * FROM patch_collection;", conn)

@@ -115,7 +115,7 @@ def prompt_fix(
     example_indices=None,
     example_index_to_fix=2,
 ):
-    dash_line = "-" * 25
+    dash_line = "=" * 25
     if shot_type == "zero":
         prompt = zero_prompt(dataset, example_index_to_fix)
     elif shot_type == "one_few":
