@@ -59,9 +59,15 @@ def fine_tune_codet5_model(dataset, model, tokenizer, output_dir):
     log.info(f"Test: {tokenized_datasets['test'].shape}")
     log.info(tokenized_datasets)
 
+    num_train_epochs = config['fine_tuning']['num_train_epochs']
+    batch_size = config['fine_tuning']['batch_size']
+    per_device_train_batch_size = config['fine_tuning']['per_device_train_bsize']
+    gradient_accumulation_steps = batch_size // per_device_train_batch_size
+
     if config["debug_mode"] is False:
         training_args = TrainingArguments(
             output_dir=output_dir,
+            per_device_train_batch_size=per_device_train_batch_size,
             learning_rate=float(config["fine_tuning"]["learning_rate"]),
             num_train_epochs=config["fine_tuning"]["num_train_epochs"],
             weight_decay=config["fine_tuning"]["weight_decay"],
@@ -71,7 +77,15 @@ def fine_tune_codet5_model(dataset, model, tokenizer, output_dir):
     else:
         training_args = TrainingArguments(
             output_dir=output_dir,
+            per_device_train_batch_size=per_device_train_batch_size,
             learning_rate=float(config["fine_tuning"]["learning_rate"]),
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            # optim="paged_adamw_32bit",
+            # save_steps=1,
+            # evaluation_strategy="steps",
+            # eval_steps=1,
+            # fp16=True,
+            # bf16=False,
             num_train_epochs=1,
             weight_decay=config["fine_tuning"]["weight_decay"],
             logging_steps=1,

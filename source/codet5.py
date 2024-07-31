@@ -1,5 +1,6 @@
 import os
 import torch
+from datetime import datetime
 from transformers import (
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
@@ -32,16 +33,19 @@ class CodeT5Model:
         if self.config["generation"]["tokenizer"] == "roberta":
             tokenizer = RobertaTokenizer.from_pretrained(
                 model_name,
-                torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+                torch_dtype=torch.bfloat16 if self.device == "cpu" else torch.float32,
                 trust_remote_code=True,
             )
         else:
             tokenizer = AutoTokenizer.from_pretrained(
-                model_name, use_fast=True)
+                model_name,
+                torch_dtype=torch.bfloat16 if self.device == "cpu" else torch.float32,
+                use_fast=True
+            )
         self.log.info("Tokenizer loaded successfully!")
 
         model = AutoModelForSeq2SeqLM.from_pretrained(
-            model_name, trust_remote_code=True)
+            model_name, trust_remote_code=True).to(self.device)
         self.log.info("Model loaded successfully!")
         self.log.info(f"Original Model: {model_name}")
         self.log.info(self.dash_line)
@@ -52,8 +56,10 @@ class CodeT5Model:
         self.log.debug("Test the Model generating a simple code snippet")
         text = "def greet(user): print(f'hello <extra_id_0>!')"
         input_ids = tokenizer(text, return_tensors="pt").input_ids
+        input_ids = input_ids.to(self.device)
 
         generated_ids = model.generate(input_ids, max_length=256)
+
         gen_output = tokenizer.decode(
             generated_ids[0], skip_special_tokens=True)
         self.log.debug(f"Model generated output: {gen_output}")
@@ -90,26 +96,26 @@ class CodeT5Model:
                    example_index_to_fix=example_index_to_fix,
                    )
 
-        prompt_fix(dataset, tokenizer, model,
-                   gen_config=None,
-                   shot_type="few",
-                   example_indices=example_indices_full,
-                   example_index_to_fix=example_index_to_fix,
-                   )
+        # prompt_fix(dataset, tokenizer, model,
+        #            gen_config=None,
+        #            shot_type="few",
+        #            example_indices=example_indices_full,
+        #            example_index_to_fix=example_index_to_fix,
+        #            )
 
-        prompt_fix(dataset, tokenizer, model,
-                   gen_config=generation_config,
-                   shot_type="few",
-                   example_indices=example_indices_full,
-                   example_index_to_fix=example_index_to_fix,
-                   )
+        # prompt_fix(dataset, tokenizer, model,
+        #            gen_config=generation_config,
+        #            shot_type="few",
+        #            example_indices=example_indices_full,
+        #            example_index_to_fix=example_index_to_fix,
+        #            )
 
-        prompt_fix(dataset, tokenizer, model,
-                   gen_config=generation_config,
-                   shot_type="zero",
-                   example_indices=example_indices_full,
-                   example_index_to_fix=example_index_to_fix,
-                   )
+        # prompt_fix(dataset, tokenizer, model,
+        #            gen_config=generation_config,
+        #            shot_type="zero",
+        #            example_indices=example_indices_full,
+        #            example_index_to_fix=example_index_to_fix,
+        #            )
         self.log.info(eva.get_trainable_model_pars(model))
 
     def run_codet5(self):
@@ -120,14 +126,25 @@ class CodeT5Model:
 
         self.generate_prompt_fixes_on_shots(dataset, tokenizer, model)
 
-        output_dir = f"models/instruct-model-{self.config['run_id']}"
+        if self.config['debug_mode']:
+            run_id = "CodeT5-Debug"
+        else:
+            run_id = "CodeT5-" + \
+                str(self.config['fine_tuning']['num_train_epochs']) + 'epoch-' + \
+                datetime.now().strftime("%Y%m%d-%H%M%S")
 
-        fine_tune_codet5_model(dataset, model, tokenizer, output_dir)
+        self.config['fine_tuning']['output_dir'] = os.path.join(
+            self.config['fine_tuning']['output_dir'], run_id)
+
+        fine_tune_codet5_model(dataset, model, tokenizer,
+                               self.config['fine_tuning']['output_dir'])
 
         self.log.info(self.dash_line)
         self.log.info("Loading the fine-tuned model...")
         instruct_model = AutoModelForSeq2SeqLM.from_pretrained(
-            output_dir, torch_dtype=torch.bfloat16)
+            self.config['fine_tuning']['output_dir'],
+            torch_dtype=torch.bfloat16 if self.device == "cpu" else torch.float32,
+        ).to(self.device)
 
         eva.show_original_instruct_fix(
             dataset, tokenizer, model, instruct_model, index=1)

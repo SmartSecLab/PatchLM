@@ -32,9 +32,6 @@ def show_few_examples(dataset, num_examples=2):
         log.info()
 
 
-# -
-
-
 def zero_prompt(dataset, index=2):
     vulnerable = dataset["test"][index]["vulnerable"]
     return f"""
@@ -91,14 +88,16 @@ def generate_fix(prompt, tokenizer, model, gen_config=None):
     model: A language model that generates text. This could be something like GPT (Generative Pre-trained Transformer) model.
     gen_config: Optional configurations for the text generation process.
     """
-    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = tokenizer(prompt, return_tensors="pt").input_ids
+    inputs = inputs.to(model.device)
+
     if gen_config is None:
         gen_config = GenerationConfig(max_length=200)
 
     output = tokenizer.decode(
         model.generate(
-            inputs["input_ids"],
-            max_new_tokens=config["generation"]["max_new_tokens"],
+            input_ids=inputs,
+            # max_new_tokens=config["generation"]["max_new_tokens"],
             generation_config=gen_config,
         )[0],
         skip_special_tokens=True,
@@ -153,36 +152,36 @@ def tokenize(prompt, tokenizer):
 
 
 def generate_and_tokenize_prompt_codellama(data_point, tokenizer):
-    full_prompt = f"""You are a powerful code-fixing model. 
-    Your job is to analyze and fix vulnerabilities in code. 
-    You are given a snippet of vulnerable code and its context.
+    full_prompt = f"""You are a powerful code-fixing model.
+    Your job is to analyze and fix vulnerabilities in code.
+    You are given a snippet of vulnerable code and its vulnerable.
 
 You must output the fixed version of the code snippet.
 
 ### Input:
 {data_point["question"]}
 
-### Context:
-{data_point["context"]}
+### vulnerable:
+{data_point["vulnerable"]}
 
 ### Response:
-{data_point["answer"]}
+{data_point["fix"]}
 """
     return tokenize(full_prompt, tokenizer)
 
 
 def generate_eval_prompt_codellama(data_point):
-    full_prompt = f"""You are a powerful code-fixing model. 
-    Your job is to analyze and fix vulnerabilities in code. 
-    You are given a snippet of vulnerable code and its context.
+    full_prompt = f"""You are a powerful code-fixing model.
+    Your job is to analyze and fix vulnerabilities in code.
+    You are given a snippet of vulnerable code and its vulnerable.
 
 You must output the fixed version of the code snippet.
 
 ### Input:
 {data_point["question"]}
 
-### Context:
-{data_point["context"]}
+### vulnerable:
+{data_point["vulnerable"]}
 
 ### Response:
 """

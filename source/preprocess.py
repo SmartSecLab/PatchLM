@@ -151,8 +151,10 @@ def load_dataset_from_df():
     log.info("=" * 50)
     return dataset
 
-
+### ================================== ###
 # load repairllama dataset
+
+
 def add_question(example):
     """ Add a new feature- question to the dataset """
     if "question" not in example:
@@ -166,8 +168,8 @@ def prepare_examples(dataset):
     """ Similarize the dataset by adding a question to the dataset  and renaming the columns"""
     dataset = dataset.map(add_question)
     # rename the columns
-    dataset = dataset.rename_column("input", "context")
-    dataset = dataset.rename_column("output", "answer")
+    dataset = dataset.rename_column("input", "vulnerable")
+    dataset = dataset.rename_column("output", "fix")
     return dataset
 
 

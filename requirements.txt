@@ -1,10 +1,8 @@
-tqdm==4.61.1
-tabulate==0.8.9
-transformers==4.7.0
-pandas==1.1.3
-numpy==1.19.2
-torch==1.6.0
-codebleu==0.7.0
-datasets==2.20.0
+transformers==4.34
 peft==0.12.0
+codebleu==0.7.0
 PyYAML==6.0.1
+tabulate==0.8.9
+rouge_score==0.1.2
+bitsandbytes==0.43.3
+pandas 

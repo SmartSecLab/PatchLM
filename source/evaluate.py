@@ -40,6 +40,7 @@ def show_original_instruct_fix(
     human_baseline_fix = dataset["test"][index]["fix"]
 
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+    input_ids = input_ids.to(original_model.device)
 
     original_model_outputs = original_model.generate(
         input_ids=input_ids,
@@ -82,15 +83,6 @@ def generate_fixes(
     original_model_fixes = []
     instruct_model_fixes = []
 
-    if config["debug_mode"]:
-        vulnerables = dataset["test"][:4]["vulnerable"]
-        human_baseline_fixes = dataset["test"][:4]["fix"]
-        programming_languages = dataset["test"][:4]["programming_language"]
-    else:
-        vulnerables = dataset["test"]["vulnerable"]
-        human_baseline_fixes = dataset["test"]["fix"]
-        programming_languages = dataset["test"]["programming_language"]
-
     for _, vulnerable in enumerate(vulnerables):
         prompt = f"""
                     Generation the fix for the following vulnerable code:
@@ -99,6 +91,7 @@ def generate_fixes(
 
                     fix: \n"""
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        input_ids = input_ids.to(original_model.device)
 
         original_model_outputs = original_model.generate(
             input_ids=input_ids,

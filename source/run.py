@@ -22,10 +22,12 @@ config["device"] = device
 if __name__ == "__main__":
     # Load the CodeLlama model or the CodeT5 model
     if 'codellama' in str(config['base_model']).lower():
+        config['model_type'] = 'codellama'
         code_llama = CodeLlamaModel(config, log)
         code_llama.run_codellama()
 
     elif 'codet5' in str(config['base_model']).lower():
+        config['model_type'] = 'codet5'
         code_t5 = CodeT5Model(config, log)
         code_t5.run_codet5()
     else:

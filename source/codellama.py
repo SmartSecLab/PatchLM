@@ -27,7 +27,7 @@ class CodeLlamaModel:
         self.log.info("Loading the CodeLLama base model...")
         model = AutoModelForCausalLM.from_pretrained(
             base_model,
-            device_map="auto" if torch.cuda.is_available() else "cpu",
+            device_map="auto" if self.device == "cuda" else "cpu",
             force_download=True,
             trust_remote_code=True,
             load_in_8bit=True,
@@ -80,7 +80,7 @@ class CodeLlamaModel:
                 skip_special_tokens=True,
             )
         self.log.info(output)
-        self.log.info(f"\nHUMAN BASELINE: \n{eval_sample['answer']}\n")
+        self.log.info(f"\nHUMAN BASELINE: \n{eval_sample['fix']}\n")
         self.log.info(self.dash_line)
 
     def run_codellama(self):
@@ -99,12 +99,15 @@ class CodeLlamaModel:
 
         model, lora_config = create_peft_config(model)
 
-        run_id = "PatchLlama-" + \
-            str(self.config['fine_tuning']['num_train_epochs']) + 'epoch-' + \
-            datetime.now().strftime("%Y%m%d-%H%M%S")
+        if self.config['debug_mode']:
+            run_id = "CodeLLama-Debug"
+        else:
+            run_id = "CodeLlama" + \
+                str(self.config['fine_tuning']['num_train_epochs']) + 'epoch-' + \
+                datetime.now().strftime("%Y%m%d-%H%M%S")
 
         self.config['fine_tuning']['output_dir'] = os.path.join(
-            os.path.join(self.config['fine_tuning']['output_dir'], run_id))
+            self.config['fine_tuning']['output_dir'], run_id)
 
         trainer, instruct_model, tokenizer = fine_tune_codellama_model(
             self.config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset)
