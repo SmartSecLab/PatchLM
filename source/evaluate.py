@@ -1,4 +1,5 @@
 # ### 2.4 - Evaluate the Model Quantitatively (with ROUGE Metric)
+import torch
 import pandas as pd
 import evaluate
 from transformers import GenerationConfig
@@ -12,6 +13,9 @@ import source.utility as util
 # Setup logger
 log = util.get_logger()
 config = util.load_config()
+
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu").type
 
 rouge = evaluate.load("rouge")
 dash_line = "=" * 50
@@ -72,7 +76,7 @@ def show_original_instruct_fix(
     log.info(f"INSTRUCT MODEL:\n{instruct_model_text_output}")
 
 
-def generate_fixes(
+def generate_fixes_old(
     original_model,
     instruct_model,
     tokenizer,
@@ -128,6 +132,89 @@ def generate_fixes(
 
     df = pd.DataFrame(
         zipped_fixes,
+        columns=[
+            "human_baseline_fixes",
+            "original_model_fixes",
+            "instruct_model_fixes",
+            "programming_language",
+        ],
+    )
+    df.to_csv(result_csv, index=False)
+    log.info(dash_line)
+    log.info(f"Results of vul-fix-training saved to {result_csv}")
+    log.info(dash_line)
+    log.info("Sample of the results:")
+    log.info(df.head())
+    log.info(dash_line)
+    return df
+
+
+def generate_text(model, tokenizer, prompt):
+    # Tokenize and move to device
+    input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+    input_ids = input_ids.to(device)
+
+    # Generate text
+    model_output = model.generate(
+        input_ids=input_ids,
+        generation_config=GenerationConfig(
+            max_new_tokens=512,
+            do_sample=True,  # sampling instead of greedy decoding
+            temperature=0.7,
+            top_p=0.9,
+            pad_token_id=tokenizer.eos_token_id,
+        ),
+    )
+    # print('decoding...')
+    # Decode the generated text
+    text_output = tokenizer.decode(
+        model_output[0], skip_special_tokens=True
+    )
+
+    return text_output
+
+
+def generate_fixes(
+    original_model,
+    instruct_model,
+    tokenizer,
+    vulnerables,
+    human_baseline_fixes,
+    result_csv,
+):
+    """" Generate fixes for a list of vulnerables using a model """
+
+    programming_languages = len(human_baseline_fixes) * ['Java']
+    original_model_fixes = []
+    instruct_model_fixes = []
+
+    for _, vulnerable in enumerate(vulnerables):
+        prompt = f"""
+                    Generation the fix for the following vulnerable code:
+                    Vulnerable:
+
+                    {vulnerable}
+
+                    fix: \n"""
+        # print(prompt)
+
+        original_model_text_output = generate_text(
+            original_model, tokenizer, prompt)
+
+        original_model_fixes.append(original_model_text_output)
+
+        instruct_model_text_output = generate_text(
+            original_model, tokenizer, prompt)
+
+        instruct_model_fixes.append(instruct_model_text_output)
+
+    df = pd.DataFrame(
+        zip(
+            human_baseline_fixes,
+            original_model_fixes,
+            instruct_model_fixes,
+            programming_languages,
+        ),
         columns=[
             "human_baseline_fixes",
             "original_model_fixes",

@@ -14,9 +14,11 @@ log.info(f"Logging at: {util.log_filename}")
 log.info(f"Config: {config}")
 log.info(dash_line)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-log.info(f"Using available device: {device}")
-config["device"] = device
+config["device"] = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu").type
+
+log.info(f"Using available device: {config['device']}")
+
 # os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 if __name__ == "__main__":

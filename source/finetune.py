@@ -151,7 +151,7 @@ def fine_tune_codellama_model(config, model, tokenizer, tokenized_train_dataset,
         save_steps=100,
         logging_steps=100,
         learning_rate=float(config['fine_tuning']['learning_rate']),
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=100,
         fp16=True,
         bf16=False,
@@ -179,7 +179,7 @@ def fine_tune_codellama_model(config, model, tokenizer, tokenized_train_dataset,
 
     trainer.model.save_pretrained(output_dir)
     trainer.save_model(output_dir)
+    log.info(f"Model saved to: {output_dir}")
     log.info("Fine-Tuning Completed!")
-    log.info("Model saved to:", output_dir)
     log.info("=" * 50)
     return trainer, model, tokenizer
