@@ -96,7 +96,16 @@ def load_df_from_sqlite():
     return df
 
 
-def load_dataset_from_df():
+def add_question(example):
+    """ Add a new feature- question to the dataset """
+    if "question" not in example:
+        example[
+            "question"
+        ] = "What is the fix version of the code for the following vulnerability?"
+    return example
+
+
+def load_dataset_from_fixme():
     """Load the dataset and split it into train, val, and test sets"""
     df = load_df_from_sqlite()
     total_rows = len(df)
@@ -144,6 +153,7 @@ def load_dataset_from_df():
             "test": test_dataset,
         }
     )
+    dataset = dataset.map(add_question)
     log.info(f'Train shape: {dataset["train"].shape}')
     log.info(f'Validation shape: {dataset["validation"].shape}')
     log.info(f'Test shape: {dataset["test"].shape}')
@@ -153,15 +163,6 @@ def load_dataset_from_df():
 
 ### ================================== ###
 # load repairllama dataset
-
-
-def add_question(example):
-    """ Add a new feature- question to the dataset """
-    if "question" not in example:
-        example[
-            "question"
-        ] = "What is the fix version of the code for the following vulnerability?"
-    return example
 
 
 def prepare_examples(dataset):

@@ -9,7 +9,7 @@ from transformers import (
 )
 
 # custom functions
-from source.preprocess import load_dataset_from_df
+from source.preprocess import load_dataset_from_fixme
 from source.finetune import fine_tune_codet5_model
 from source.prompt import prompt_fix
 import source.evaluate as eva
@@ -119,7 +119,8 @@ class CodeT5Model:
         self.log.info(eva.get_trainable_model_pars(model))
 
     def run_codet5(self):
-        dataset = load_dataset_from_df()
+        dataset = load_dataset_from_fixme()
+
         model, tokenizer = self.load_codet5_model()
 
         self.evaluate_model(model, tokenizer, dataset)

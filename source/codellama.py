@@ -9,7 +9,7 @@ from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 
 import source.utility as util
 from source.finetune import (create_peft_config, fine_tune_codellama_model)
-from source.preprocess import load_repairllama_dataset
+from source.preprocess import load_repairllama_dataset, load_dataset_from_fixme
 from source.prompt import (generate_and_tokenize_prompt_codellama,
                            generate_eval_prompt_codellama)
 import source.evaluate as eva
@@ -107,7 +107,8 @@ class CodeLlamaModel:
         """ Run the CodeLlama model"""
         model, tokenizer = self.load_codellama_model()
 
-        dataset = load_repairllama_dataset()
+        # dataset = load_repairllama_dataset()
+        dataset = load_dataset_from_fixme()
 
         tokenized_train_dataset, tokenized_val_dataset = self.split_train_val_tokenize(
             dataset, tokenizer, self.config["debug_mode"])

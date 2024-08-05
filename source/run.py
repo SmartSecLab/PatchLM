@@ -14,6 +14,15 @@ log.info(f"Logging at: {util.log_filename}")
 log.info(f"Config: {config}")
 log.info(dash_line)
 
+
+# Clears the memory cache
+torch.cuda.empty_cache()
+
+# Optionally, you can also use this to clear the CUDA memory allocator
+torch.cuda.reset_max_memory_allocated()
+torch.cuda.reset_max_memory_cached()
+
+
 config["device"] = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu").type
 
