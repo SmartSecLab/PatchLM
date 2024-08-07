@@ -76,79 +76,6 @@ def show_original_instruct_fix(
     log.info(f"INSTRUCT MODEL:\n{instruct_model_text_output}")
 
 
-def generate_fixes_old(
-    original_model,
-    instruct_model,
-    tokenizer,
-    dataset,
-    result_csv,
-):
-    """" Generate fixes for a list of vulnerables using a model """
-    original_model_fixes = []
-    instruct_model_fixes = []
-
-    for _, vulnerable in enumerate(vulnerables):
-        prompt = f"""
-                    Generation the fix for the following vulnerable code:
-
-                    {vulnerable}
-
-                    fix: \n"""
-        input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-        input_ids = input_ids.to(original_model.device)
-
-        original_model_outputs = original_model.generate(
-            input_ids=input_ids,
-            generation_config=GenerationConfig(
-                max_new_tokens=config["generation"]["max_new_tokens"],
-            ),
-        )
-        original_model_text_output = tokenizer.decode(
-            original_model_outputs[0], skip_special_tokens=True
-        )
-
-        original_model_fixes.append(original_model_text_output)
-
-        instruct_model_outputs = instruct_model.generate(
-            input_ids=input_ids,
-            generation_config=GenerationConfig(
-                max_new_tokens=config["generation"]["max_new_tokens"],
-            ),
-        )
-        instruct_model_text_output = tokenizer.decode(
-            instruct_model_outputs[0], skip_special_tokens=True
-        )
-
-        instruct_model_fixes.append(instruct_model_text_output)
-
-    zipped_fixes = list(
-        zip(
-            human_baseline_fixes,
-            original_model_fixes,
-            instruct_model_fixes,
-            programming_languages,
-        )
-    )
-
-    df = pd.DataFrame(
-        zipped_fixes,
-        columns=[
-            "human_baseline_fixes",
-            "original_model_fixes",
-            "instruct_model_fixes",
-            "programming_language",
-        ],
-    )
-    df.to_csv(result_csv, index=False)
-    log.info(dash_line)
-    log.info(f"Results of vul-fix-training saved to {result_csv}")
-    log.info(dash_line)
-    log.info("Sample of the results:")
-    log.info(df.head())
-    log.info(dash_line)
-    return df
-
-
 def generate_text(model, tokenizer, prompt):
     # Tokenize and move to device
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
@@ -174,39 +101,65 @@ def generate_text(model, tokenizer, prompt):
     return text_output
 
 
+def get_prompt(vul, lang):
+    prompt = f"""
+                Generate the fix for the following vulnerable code in {lang} programming language:\n
+                Vulnerable version of code:
+
+                {vul}
+
+                fix version of the code: \n"""
+    return prompt
+
+
 def generate_fixes(
     original_model,
     instruct_model,
     tokenizer,
-    vulnerables,
-    human_baseline_fixes,
+    # vulnerables,
+    # human_baseline_fixes,
+    # programming_languages,
+    test_dataset,
     result_csv,
 ):
     """" Generate fixes for a list of vulnerables using a model """
 
-    programming_languages = len(human_baseline_fixes) * ['Java']
+    # programming_languages = len(human_baseline_fixes) * ['Java']
     original_model_fixes = []
     instruct_model_fixes = []
+    vulnerables = test_dataset["vulnerable"]
+    human_baseline_fixes = test_dataset["fix"]
+    programming_languages = test_dataset["programming_language"]
+    sample_size = len(vulnerables)
 
-    for _, vulnerable in enumerate(vulnerables):
-        prompt = f"""
-                    Generation the fix for the following vulnerable code:
-                    Vulnerable:
+    for vul, lang in zip(vulnerables, programming_languages):
+        prompt = get_prompt(vul, lang)
 
-                    {vulnerable}
-
-                    fix: \n"""
-        # print(prompt)
-
-        original_model_text_output = generate_text(
+        original_model_output = generate_text(
             original_model, tokenizer, prompt)
 
-        original_model_fixes.append(original_model_text_output)
+        original_model_fixes.append(original_model_output)
 
-        instruct_model_text_output = generate_text(
+        # show the count of the generated fixes
+        done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
+        log.info(f"Generated [{done_prop_og}] fixes from original so far")
+
+    log.info(dash_line)
+    log.info("Original model fixes generation done!")
+    log.info(dash_line)
+
+    for vul, lang in zip(vulnerables, programming_languages):
+        prompt = get_prompt(vul, lang)
+        instruct_model_output = generate_text(
             original_model, tokenizer, prompt)
 
-        instruct_model_fixes.append(instruct_model_text_output)
+        instruct_model_fixes.append(instruct_model_output)
+        done_prop_ins = f'{len(instruct_model_fixes)}/{sample_size}'
+        log.info(f"Generated [{done_prop_ins}] fixes from instruct so far")
+
+    log.info(dash_line)
+    log.info("Original model fixes generation done!")
+    log.info(dash_line)
 
     df = pd.DataFrame(
         zip(
@@ -239,7 +192,7 @@ def show_rouge_scores(original_model_results, instruct_model_results):
     df["Base"] = df["Base"] * 100
     df["Instruct"] = df["Instruct"] * 100
     df["Improvement"] = df["Instruct"] - df["Base"]
-    df = df.round(2).applymap(lambda x: f"{x:.2f}%")
+    df = df.round(2).map(lambda x: f"{x:.2f}%")
     log.info(f"The ROUGE scores improved:")
     log.info(f"{tabulate(df, headers='keys', tablefmt='psql')}")
 
@@ -317,7 +270,7 @@ def show_bleu_scores(original_bleu_scores, instruct_bleu_scores):
     df["Base"] *= 100
     df["Instruct"] *= 100
     df["Improvement"] = df["Instruct"] - df["Base"]
-    df = df.round(2).applymap(lambda x: f"{x:.2f}%")
+    df = df.round(2).map(lambda x: f"{x:.2f}%")
 
     log.info("Weighted average BLEU scores improved:")
     log.info(tabulate(df, headers='keys', tablefmt='psql'))

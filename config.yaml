@@ -27,10 +27,10 @@ preprocess:
   max_hunks_per_url: 1
   # CodeT5 supported: Python, Java, JavaScript, PHP, Ruby, Go, C, and C#
   prog_lang: # list of programming languages
-    # - C
-    # - C++
+    - C
+    - C++
     # - Python
-    - Java
+    # - Java
     # - JavaScript
     # - PHP
     # - Ruby

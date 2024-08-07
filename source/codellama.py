@@ -108,6 +108,7 @@ class CodeLlamaModel:
         model, tokenizer = self.load_codellama_model()
 
         # dataset = load_repairllama_dataset()
+
         dataset = load_dataset_from_fixme()
 
         tokenized_train_dataset, tokenized_val_dataset = self.split_train_val_tokenize(
@@ -132,6 +133,7 @@ class CodeLlamaModel:
 
         trainer, instruct_model, tokenizer = fine_tune_codellama_model(
             self.config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset)
+        instruct_model = model
 
         self.log.info("Evaluating the fine-tuned model...")
         self.evaluate_model_codellama(instruct_model, tokenizer, eval_sample)
@@ -141,21 +143,22 @@ class CodeLlamaModel:
             self.config['fine_tuning']['output_dir'], "results.csv")
 
         if self.config["debug_mode"]:
-            vulnerables = dataset["test"]["vulnerable"][:3]
-            human_baseline_fixes = dataset["test"]["fix"][:3]
+            test_dataset = dataset["test"].shuffle(seed=42).select(range(3))
         else:
-            vulnerables = dataset["test"]["vulnerable"]
-            human_baseline_fixes = dataset["test"]["fix"]
+            test_dataset = dataset["test"]
 
         self.log.info("Generating test patches...")
         results = eva.generate_fixes(
             model,
             instruct_model,
             tokenizer,
-            vulnerables,
-            human_baseline_fixes,
+            test_dataset,
             result_csv,
         )
+        # empty the cache
+        del model
+        del instruct_model
+        torch.cuda.empty_cache()
 
         self.log.info("Evaluating the models...")
 

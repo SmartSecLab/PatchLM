@@ -69,6 +69,7 @@ def fine_tune_codet5_model(dataset, model, tokenizer, output_dir):
             output_dir=output_dir,
             per_device_train_batch_size=per_device_train_batch_size,
             learning_rate=float(config["fine_tuning"]["learning_rate"]),
+            gradient_accumulation_steps=gradient_accumulation_steps,
             num_train_epochs=config["fine_tuning"]["num_train_epochs"],
             weight_decay=config["fine_tuning"]["weight_decay"],
             logging_steps=config["fine_tuning"]["logging_steps"],

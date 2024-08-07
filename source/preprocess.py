@@ -168,6 +168,10 @@ def load_dataset_from_fixme():
 def prepare_examples(dataset):
     """ Similarize the dataset by adding a question to the dataset  and renaming the columns"""
     dataset = dataset.map(add_question)
+    # add programming_language column
+    dataset = dataset.map(
+        lambda x: {"programming_language": "Java"})
+    # print(dataset)
     # rename the columns
     dataset = dataset.rename_column("input", "vulnerable")
     dataset = dataset.rename_column("output", "fix")
@@ -185,5 +189,8 @@ def load_repairllama_dataset():
     log.info("Loading the dataset...")
     dataset = prepare_examples(dataset)
     log.info(dataset)
+    log.info(f"Dataset shape: {dataset.shape}")
+    # example = dataset["train"][0]
+    # log.info(f"Example: \n{example}")
     log.info("=" * 50)
     return dataset
