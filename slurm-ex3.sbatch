@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p hgx2q
+#SBATCH -p dgx2q
 #SBATCH  --job-name=codellama
 #SBATCH -n 1
 #SBATCH --gres=gpu:2
@@ -20,6 +20,7 @@ python3 --version
 # srun python3 -m src.run
 # python3 -m source.run
 # python3 -m codellama
-python3 -m source.run_codellama
+# python3 -m source.run_codellama
+sh train.sh
 
 echo "Job ended at:" `date +"%Y-%m-%d %H:%M:%S"`

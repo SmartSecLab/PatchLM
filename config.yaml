@@ -2,7 +2,7 @@ base_model: Salesforce/codet5-base
 # base_model: codellama/CodeLlama-7b-Instruct-hf
 # base_model: models/CodeLLama-7b-quantized-4bit
 # most lightweight model of CodeLlama for instruction prompt
-debug_mode: True
+debug_mode: False
 use_4bit_quantization: True
 dataset_use: FixMe # FixMe or repairllama
 #
@@ -16,12 +16,12 @@ generation:
 fine_tuning:
   output_dir: models
   learning_rate: 1e-3
-  num_train_epochs: 10
+  num_train_epochs: 20
   batch_size: 32
   per_device_train_bsize: 16
   weight_decay: 0.01
-  logging_steps: 100
-  max_steps: 10
+  logging_steps: 200
+  max_steps: 20
 # set the following paras if you are using FixMe dataset
 preprocess:
   db_file: data/FixMe-v1.db

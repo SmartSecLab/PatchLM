@@ -57,16 +57,16 @@ if __name__ == "__main__":
     parser.add_argument('--base_model', type=str, help='Base model to use')
     parser.add_argument('--dataset_use', type=str,  help='Dataset to use')
     parser.add_argument('--debug_mode', action='store_true', help='Debug mode')
+    parser.add_argument('--languages', type=str, nargs='+',
+                        help='Programming languages to use')
 
     args = parser.parse_args()
     # Update the config with the command line arguments
     config["base_model"] = args.base_model if args.base_model else config["base_model"]
     config["dataset_use"] = args.dataset_use if args.dataset_use else config["dataset_use"]
     config["debug_mode"] = args.debug_mode if args.debug_mode else config["debug_mode"]
+    config['preprocess']['prog_lang'] = args.languages if args.languages else config['preprocess']['prog_lang']
 
-    log.info(f"Using base model: {config['base_model']}")
-    log.info(f"Using dataset: {config['dataset_use']}")
-    log.info(f"Debug mode: {config['debug_mode']}")
     log.info(f"Config: {config}")
 
     # Load the dataset

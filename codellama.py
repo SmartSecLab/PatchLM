@@ -68,8 +68,8 @@ def tokenize(prompt):
 
 
 def generate_and_tokenize_prompt_codellama(data_point):
-    full_prompt = f"""You are a powerful code-fixing model. 
-    Your job is to analyze and fix vulnerabilities in code. 
+    full_prompt = f"""You are a powerful code-fixing model.
+    Your job is to analyze and fix vulnerabilities in code.
     You are given a snippet of vulnerable code and its context.
 
 You must output the fixed version of the code snippet.
@@ -87,8 +87,8 @@ You must output the fixed version of the code snippet.
 
 
 def generate_eval_prompt_codellama(data_point):
-    full_prompt = f"""You are a powerful code-fixing model. 
-    Your job is to analyze and fix vulnerabilities in code. 
+    full_prompt = f"""You are a powerful code-fixing model.
+    Your job is to analyze and fix vulnerabilities in code.
     You are given a snippet of vulnerable code and its context.
 
 You must output the fixed version of the code snippet.
