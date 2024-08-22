@@ -158,7 +158,7 @@ def generate_fixes(
         log.info(f"Generated [{done_prop_ins}] fixes from instruct so far")
 
     log.info(dash_line)
-    log.info("Original model fixes generation done!")
+    log.info("Instruct model fixes generation done!")
     log.info(dash_line)
 
     df = pd.DataFrame(

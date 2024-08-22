@@ -18,7 +18,7 @@ db_file = config["preprocess"]["db_file"]
 # List of programming languages to include in the dataset
 # CodeT5 supported: Python, Java, JavaScript, PHP, Ruby, Go, C, and C#
 prog_list = config["preprocess"]["prog_lang"]
-log.info("Programming Languages: %s", prog_list)
+# log.info("Programming Languages: %s", prog_list)
 
 
 def filter_patches(df_patch, max_hunks_per_url=2):

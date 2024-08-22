@@ -1,9 +1,10 @@
-# base_model: Salesforce/codet5-base
+base_model: Salesforce/codet5-base
 # base_model: codellama/CodeLlama-7b-Instruct-hf
-base_model: models/CodeLLama-7b-quantized-4bit
+# base_model: models/CodeLLama-7b-quantized-4bit
 # most lightweight model of CodeLlama for instruction prompt
-debug_mode: False
+debug_mode: True
 use_4bit_quantization: True
+dataset_use: FixMe # FixMe or repairllama
 #
 generation:
   max_new_tokens: 512
@@ -21,7 +22,7 @@ fine_tuning:
   weight_decay: 0.01
   logging_steps: 100
   max_steps: 10
-#
+# set the following paras if you are using FixMe dataset
 preprocess:
   db_file: data/FixMe-v1.db
   max_hunks_per_url: 1

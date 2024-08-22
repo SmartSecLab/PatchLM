@@ -69,7 +69,8 @@ def load_config():
 
 def run_os_command(command):
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        result = subprocess.run(command, shell=True,
+                                capture_output=True, text=True)
         if result.returncode == 0:
             print("Output:", result.stdout)
         else:

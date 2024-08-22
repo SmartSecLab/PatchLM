@@ -9,7 +9,7 @@ from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 
 import source.utility as util
 from source.finetune import (create_peft_config, fine_tune_codellama_model)
-from source.preprocess import load_repairllama_dataset, load_dataset_from_fixme
+# from source.preprocess import load_repairllama_dataset, load_dataset_from_fixme
 from source.prompt import (generate_and_tokenize_prompt_codellama,
                            generate_eval_prompt_codellama)
 import source.evaluate as eva
@@ -35,7 +35,7 @@ class CodeLlamaModel:
             load_in_8bit_fp32_cpu_offload=not use_4bit
         )
 
-        self.log.info("Loading the CodeLLama base model...")
+        self.log.info("Loading the CodeLama base model...")
         # Initialize the model with empty weights
 
         with init_empty_weights():
@@ -103,13 +103,9 @@ class CodeLlamaModel:
         self.log.info(f"\nHUMAN BASELINE: \n{eval_sample['fix']}\n")
         self.log.info(self.dash_line)
 
-    def run_codellama(self):
+    def run_codellama(self, dataset):
         """ Run the CodeLlama model"""
         model, tokenizer = self.load_codellama_model()
-
-        # dataset = load_repairllama_dataset()
-
-        dataset = load_dataset_from_fixme()
 
         tokenized_train_dataset, tokenized_val_dataset = self.split_train_val_tokenize(
             dataset, tokenizer, self.config["debug_mode"])
@@ -121,16 +117,6 @@ class CodeLlamaModel:
 
         model, lora_config = create_peft_config(model)
 
-        if self.config['debug_mode']:
-            run_id = "CodeLLama-Debug"
-        else:
-            run_id = "CodeLlama" + \
-                str(self.config['fine_tuning']['num_train_epochs']) + 'epoch-' + \
-                datetime.now().strftime("%Y%m%d-%H%M%S")
-
-        self.config['fine_tuning']['output_dir'] = os.path.join(
-            self.config['fine_tuning']['output_dir'], run_id)
-
         trainer, instruct_model, tokenizer = fine_tune_codellama_model(
             self.config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset)
         instruct_model = model
@@ -138,30 +124,4 @@ class CodeLlamaModel:
         self.log.info("Evaluating the fine-tuned model...")
         self.evaluate_model_codellama(instruct_model, tokenizer, eval_sample)
 
-        # TODO: Implement the following methods
-        result_csv = os.path.join(
-            self.config['fine_tuning']['output_dir'], "results.csv")
-
-        if self.config["debug_mode"]:
-            test_dataset = dataset["test"].shuffle(seed=42).select(range(3))
-        else:
-            test_dataset = dataset["test"]
-
-        self.log.info("Generating test patches...")
-        results = eva.generate_fixes(
-            model,
-            instruct_model,
-            tokenizer,
-            test_dataset,
-            result_csv,
-        )
-        # empty the cache
-        del model
-        del instruct_model
-        torch.cuda.empty_cache()
-
-        self.log.info("Evaluating the models...")
-
-        eva.evaluate_rouge(results)
-
-        eva.evaluate_bleu(results)
+        return model, instruct_model, tokenizer

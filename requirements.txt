@@ -5,4 +5,13 @@ PyYAML==6.0.1
 tabulate==0.8.9
 rouge_score==0.1.2
 bitsandbytes==0.43.3
+tree-sitter==0.22.3
+tree-sitter-c==0.21.4
+tree-sitter-java==0.21.0
+tree-sitter-javascript==0.21.0
+tree-sitter-python==0.21.0
+tree-sitter-ruby==0.21.0
+tree-sitter-php==0.21.0
+tree-sitter-go==0.21.0
+tree-sitter-cpp==0.21.0
 pandas 

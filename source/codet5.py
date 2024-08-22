@@ -116,26 +116,14 @@ class CodeT5Model:
         #            example_indices=example_indices_full,
         #            example_index_to_fix=example_index_to_fix,
         #            )
-        self.log.info(eva.get_trainable_model_pars(model))
 
-    def run_codet5(self):
-        dataset = load_dataset_from_fixme()
-
+    def run_codet5(self, dataset):
+        """ Run the CodeT5 model"""
         model, tokenizer = self.load_codet5_model()
 
         self.evaluate_model(model, tokenizer, dataset)
-
         self.generate_prompt_fixes_on_shots(dataset, tokenizer, model)
-
-        if self.config['debug_mode']:
-            run_id = "CodeT5-Debug"
-        else:
-            run_id = "CodeT5-" + \
-                str(self.config['fine_tuning']['num_train_epochs']) + 'epoch-' + \
-                datetime.now().strftime("%Y%m%d-%H%M%S")
-
-        self.config['fine_tuning']['output_dir'] = os.path.join(
-            self.config['fine_tuning']['output_dir'], run_id)
+        self.log.info(eva.get_trainable_model_pars(model))
 
         fine_tune_codet5_model(dataset, model, tokenizer,
                                self.config['fine_tuning']['output_dir'])
@@ -149,20 +137,4 @@ class CodeT5Model:
 
         eva.show_original_instruct_fix(
             dataset, tokenizer, model, instruct_model, index=1)
-
-        result_csv = util.log_dir / f"result-{util.run_id}.csv"
-
-        self.log.info("Generating test patches...")
-        results = eva.generate_fixes(
-            model,
-            instruct_model,
-            tokenizer,
-            dataset,
-            result_csv,
-        )
-
-        self.log.info("Evaluating the models...")
-
-        eva.evaluate_rouge(results)
-
-        eva.evaluate_bleu(results)
+        return model, instruct_model, tokenizer
