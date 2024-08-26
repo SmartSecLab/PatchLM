@@ -28,35 +28,43 @@ class CodeLlamaModel:
         """ Load the CodeLlama model"""
         base_model = self.config["base_model"]
         use_4bit = self.config["use_4bit_quantization"]
+        local_model_path = "models/CodeLLama-7b-quantized-4bit"
 
-        # Configure quantization
-        quantization_config = BitsAndBytesConfig(
-            load_in_4bit=use_4bit,
-            load_in_8bit_fp32_cpu_offload=not use_4bit
-        )
+        # Check if the quantized model is already saved locally
+        if os.path.exists(local_model_path):
+            self.log.info("Loading the locally saved quantized model...")
+            model = AutoModelForCausalLM.from_pretrained(local_model_path)
+            tokenizer = AutoTokenizer.from_pretrained(local_model_path)
+        else:
+            self.log.info("Quantized model not found locally.")
+            self.log.info("Loading and quantizing the base model...")
 
-        self.log.info("Loading the CodeLama base model...")
-        # Initialize the model with empty weights
-
-        with init_empty_weights():
-            model = AutoModelForCausalLM.from_pretrained(
-                base_model,
-                device_map="auto" if self.device == "cuda" else "cpu",
-                # force_download=True,
-                # trust_remote_code=True,
-                quantization_config=quantization_config,
+            # Configure quantization
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=use_4bit,
+                load_in_8bit_fp32_cpu_offload=not use_4bit
             )
 
-        tokenizer = AutoTokenizer.from_pretrained(
-            base_model,
-            # force_download=True,
-            # trust_remote_code=True,
-        )
+            # Initialize the model with empty weights
+            with init_empty_weights():
+                model = AutoModelForCausalLM.from_pretrained(
+                    base_model,
+                    device_map="auto" if self.device == "cuda" else "cpu",
+                    quantization_config=quantization_config,
+                )
 
-        model.config.use_cache = False
+            tokenizer = AutoTokenizer.from_pretrained(base_model)
 
-        tokenizer.pad_token = tokenizer.eos_token
-        tokenizer.padding_side = "right"
+            model.config.use_cache = False
+
+            tokenizer.pad_token = tokenizer.eos_token
+            tokenizer.padding_side = "right"
+
+            # Save the quantized model for future use
+            self.log.info("Saving the quantized model for future use...")
+            model.save_pretrained(local_model_path)
+            tokenizer.save_pretrained(local_model_path)
+
         self.log.info("Model and tokenizer loaded successfully!")
         self.log.info(self.dash_line)
         return model, tokenizer
