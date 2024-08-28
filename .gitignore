@@ -5,6 +5,14 @@ FixMe.code-workspace
 data/FixMe-v1.db
 data/cvelistV5/
 Makefile
+.idea/
+data/FixMe-v2.db
+data/repairllama/
+logs/
+models/
+source/test.py
+test.ipynb
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
