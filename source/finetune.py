@@ -170,16 +170,22 @@ def fine_tune_codellama_model(config, model, tokenizer, tokenized_train_dataset,
         data_collator=default_data_collator,
     )
 
-    old_state_dict = model.state_dict
-    model.state_dict = (lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())).__get__(
-        model, type(model)
-    )
+    # ## enabling these lines will cause deserialize error
+    # old_state_dict = model.state_dict
+    # model.state_dict = (lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())).__get__(
+    #     model, type(model)
+    # )
 
     # Train and save the model
     trainer.train()
 
     trainer.model.save_pretrained(output_dir)
     trainer.save_model(output_dir)
+
+    # model.merge_and_upload()
+    model.save_pretrained(output_dir, safe_serialization=True)
+    tokenizer.save_pretrained(output_dir)
+
     log.info(f"Model saved to: {output_dir}")
     log.info("Fine-Tuning Completed!")
     log.info("=" * 50)

@@ -125,9 +125,19 @@ class CodeLlamaModel:
 
         model, lora_config = create_peft_config(model)
 
-        trainer, instruct_model, tokenizer = fine_tune_codellama_model(
-            self.config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset)
-        instruct_model = model
+        if self.config['only_compare']:
+            self.log.info('=' * 50)
+            self.log.info(
+                "Comparing already fine-tuned with the base model...")
+
+            instruct_model = AutoModelForCausalLM.from_pretrained(
+                self.config["instruct_model"])
+
+            tokenizer = CodeLlamaTokenizer.from_pretrained(
+                self.config["instruct_model"])
+        else:
+            trainer, instruct_model, tokenizer = fine_tune_codellama_model(
+                self.config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset)
 
         self.log.info("Evaluating the fine-tuned model...")
         self.evaluate_model_codellama(instruct_model, tokenizer, eval_sample)

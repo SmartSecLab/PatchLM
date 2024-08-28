@@ -132,31 +132,70 @@ def generate_fixes(
     programming_languages = test_dataset["programming_language"]
     sample_size = len(vulnerables)
 
-    for vul, lang in zip(vulnerables, programming_languages):
-        prompt = get_prompt(vul, lang)
+    # for vul, lang in zip(vulnerables, programming_languages):
+    #     prompt = get_prompt(vul, lang)
 
-        original_model_output = generate_text(
-            original_model, tokenizer, prompt)
+    #     original_model_output = generate_text(
+    #         original_model, tokenizer, prompt)
 
-        original_model_fixes.append(original_model_output)
+    #     original_model_fixes.append(original_model_output)
 
-        # show the count of the generated fixes
-        done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
-        log.info(f"Generated [{done_prop_og}] fixes from original so far")
+    #     # show the count of the generated fixes
+    #     done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
+    #     log.info(f"Generated [{done_prop_og}] fixes from original so far")
 
+    # log.info(dash_line)
+    # log.info("Original model fixes generation done!")
+    # log.info(dash_line)
+
+    # Generate prompts in a single operation using list comprehension
+    prompts = [get_prompt(vul, lang)
+               for vul, lang in zip(vulnerables, programming_languages)]
+
+    # Tokenize all prompts at once, assuming tokenizer.batch_encode_plus or equivalent function
+    inputs = tokenizer.batch_encode_plus(
+        prompts, return_tensors='pt', padding=True, truncation=True).to('cuda')
+
+    # Generate all outputs in a single batch operation
+    with torch.no_grad():  # Disabling gradient calculation for inference
+        outputs = original_model.generate(**inputs, max_new_tokens=512)
+
+    # Decode the generated outputs back into text
+    original_model_fixes = tokenizer.batch_decode(
+        outputs, skip_special_tokens=True)
+
+    # Log the number of generated fixes
+    done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
+    log.info(f"Generated [{done_prop_og}] fixes from original so far")
     log.info(dash_line)
     log.info("Original model fixes generation done!")
     log.info(dash_line)
 
-    for vul, lang in zip(vulnerables, programming_languages):
-        prompt = get_prompt(vul, lang)
-        instruct_model_output = generate_text(
-            original_model, tokenizer, prompt)
+    # empty the cache
+    del original_model
 
-        instruct_model_fixes.append(instruct_model_output)
-        done_prop_ins = f'{len(instruct_model_fixes)}/{sample_size}'
-        log.info(f"Generated [{done_prop_ins}] fixes from instruct so far")
+    # for vul, lang in zip(vulnerables, programming_languages):
+    #     prompt = get_prompt(vul, lang)
 
+    #     instruct_model_output = generate_text(
+    #         instruct_model, tokenizer, prompt)
+
+    #     instruct_model_fixes.append(instruct_model_output)
+    #     done_prop_ins = f'{len(instruct_model_fixes)}/{sample_size}'
+    #     log.info(f"Generated [{done_prop_ins}] fixes from instruct so far")
+
+    # Generate all outputs in a single batch operation
+    with torch.no_grad():  # Disabling gradient calculation for inference
+        instruct_outputs = instruct_model.generate(
+            **inputs, max_new_tokens=512)
+
+    # Decode the generated outputs back into text
+    instruct_model_fixes = tokenizer.batch_decode(
+        instruct_outputs, skip_special_tokens=True)
+
+    # Log the number of generated fixes
+    done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
+    log.info(f"Generated [{done_prop_og}] fixes from instruct model so far")
     log.info(dash_line)
     log.info("Instruct model fixes generation done!")
     log.info(dash_line)
