@@ -106,7 +106,7 @@ if __name__ == "__main__":
         config['fine_tuning']['output_dir'], f"result-{run_id}.csv")
 
     if config["debug_mode"]:
-        test_dataset = dataset["test"].shuffle(seed=42).select(range(3))
+        test_dataset = dataset["test"].shuffle(seed=42).select(range(5))
     else:
         test_dataset = dataset["test"]
 

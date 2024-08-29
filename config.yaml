@@ -5,10 +5,10 @@ base_model: Salesforce/codet5-base
 debug_mode: True
 use_4bit_quantization: True
 dataset_use: FixMe # FixMe or repairllama
-only_compare: False
+only_compare: True
 # compare with already fine-tune instruct_model
-# instruct_model: models/codellama20epoch-20240827-175208
-instruct_model: models/codellama-Debug
+instruct_model: models/codellama20epoch-20240828-165901
+# instruct_model: models/codellama-Debug
 #
 generation:
   max_new_tokens: 512
@@ -34,10 +34,10 @@ preprocess:
   prog_lang: # list of programming languages
     - C
     - C++
-    - Python
-    - Java
-    - JavaScript
-    - PHP
-    - Ruby
-    - Go
-    - C#
+    # - Python
+    # - Java
+    # - JavaScript
+    # - PHP
+    # - Ruby
+    # - Go
+    # - C#
