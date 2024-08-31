@@ -1,3 +1,11 @@
+"""
+Copyright (C) 2023 Kristiania University College- All Rights Reserved
+You may use, distribute and modify this code under the
+terms of the Apachee-2.0 license- http://www.apache.org/licenses/
+
+Project: PatchT5 - Code Language Models on Generating Vulnerability Security Fixes utilizing Commit Hunks
+@Programmer: Guru Bhandari
+"""
 import os
 from datetime import datetime
 from functools import partial

@@ -1,3 +1,12 @@
+"""
+Copyright (C) 2023 Kristiania University College- All Rights Reserved
+You may use, distribute and modify this code under the
+terms of the Apachee-2.0 license- http://www.apache.org/licenses/
+
+Project: PatchT5 - Code Language Models on Generating Vulnerability Security Fixes utilizing Commit Hunks
+@Programmer: Guru Bhandari
+"""
+
 import logging
 import time
 import subprocess
@@ -45,17 +54,6 @@ if not hasattr(logging, "logger_configured"):
 def get_logger():
     """ Return the logger """
     return logging.root
-
-
-# # Setup logger
-# logger = logger_config.setup_logger()
-
-# # Some sample log messages
-# logger.debug('This is a debug message')
-# logger.info('This is an info message')
-# logger.warning('This is a warning message')
-# logger.error('This is an error message')
-# logger.critical('This is a critical message')
 
 
 def load_config():

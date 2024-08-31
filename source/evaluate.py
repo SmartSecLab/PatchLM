@@ -1,3 +1,12 @@
+"""
+Copyright (C) 2023 Kristiania University College- All Rights Reserved
+You may use, distribute and modify this code under the
+terms of the Apachee-2.0 license- http://www.apache.org/licenses/
+
+Project: PatchT5 - Code Language Models on Generating Vulnerability Security Fixes utilizing Commit Hunks
+@Programmer: Guru Bhandari
+"""
+
 # ### 2.4 - Evaluate the Model Quantitatively (with ROUGE Metric)
 import torch
 import pandas as pd
@@ -116,9 +125,6 @@ def generate_fixes(
     original_model,
     instruct_model,
     tokenizer,
-    # vulnerables,
-    # human_baseline_fixes,
-    # programming_languages,
     test_dataset,
     result_csv,
 ):
@@ -131,22 +137,6 @@ def generate_fixes(
     human_baseline_fixes = test_dataset["fix"]
     programming_languages = test_dataset["programming_language"]
     sample_size = len(vulnerables)
-
-    # for vul, lang in zip(vulnerables, programming_languages):
-    #     prompt = get_prompt(vul, lang)
-
-    #     original_model_output = generate_text(
-    #         original_model, tokenizer, prompt)
-
-    #     original_model_fixes.append(original_model_output)
-
-    #     # show the count of the generated fixes
-    #     done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
-    #     log.info(f"Generated [{done_prop_og}] fixes from original so far")
-
-    # log.info(dash_line)
-    # log.info("Original model fixes generation done!")
-    # log.info(dash_line)
 
     # Generate prompts in a single operation using list comprehension
     prompts = [get_prompt(vul, lang)
@@ -173,16 +163,6 @@ def generate_fixes(
 
     # empty the cache
     del original_model
-
-    # for vul, lang in zip(vulnerables, programming_languages):
-    #     prompt = get_prompt(vul, lang)
-
-    #     instruct_model_output = generate_text(
-    #         instruct_model, tokenizer, prompt)
-
-    #     instruct_model_fixes.append(instruct_model_output)
-    #     done_prop_ins = f'{len(instruct_model_fixes)}/{sample_size}'
-    #     log.info(f"Generated [{done_prop_ins}] fixes from instruct so far")
 
     # Generate all outputs in a single batch operation
     with torch.no_grad():  # Disabling gradient calculation for inference
