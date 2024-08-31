@@ -23,7 +23,7 @@ Before generating patches, ensure that you have the necessary dependencies insta
 
 # Dataset
 
-The used `FixMe` dataset is available at [Zenodo](https://zenodo.org/records/5825618). Please refer [GitHub repository](https://github.com/SmartSecLab/FixMe) to construct updated version of the dataset. Additionally, we have utilized `repairllama` dataset from Huggingface using the `datasets` library. You can find more information about this dataset [here](https://huggingface.co/datasets/ASSERT-KTH/repairllama-datasets).
+The used `FixMe` dataset is available at [Zenodo](https://zenodo.org/records/10955342). Please refer [GitHub repository](https://github.com/SmartSecLab/FixMe) to construct updated version of the dataset. Additionally, we have utilized `repairllama` dataset from Huggingface using the `datasets` library. You can find more information about this dataset [here](https://huggingface.co/datasets/ASSERT-KTH/repairllama-datasets).
 
 # Acknowledgement
 
