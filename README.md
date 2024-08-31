@@ -2,7 +2,7 @@
 
 Welcome to the repository for PatchT5, a novel code language model fine-tuned specifically to fix security vulnerabilities in code blocks derived from commit hunks associated with Common Vulnerabilities and Exposures (CVE) records.
 By leveraging our model to understand secure coding practices and generate accurate patches, PatchT5 aims to address the diverse nature of security flaws across multiple programming languages.
-Our experimental evaluation demonstrates that PatchT5 significantly outperforms the baseline CodeT5 model in generating effective security patches, as reflected in the performance metrics.
+Our experimental evaluation demonstrates that PatchT5 significantly outperforms the baseline `CodeT5` and `CodeLlama` models in generating effective security patches, as reflected in the performance metrics.
 This research highlights the potential of using code language models (CLM) to enhance automated vulnerability fixing, offering a promising path for future advancements in the field.
 
 # Configuration Parameters
