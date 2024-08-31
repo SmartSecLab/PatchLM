@@ -12,6 +12,8 @@ logs/
 models/
 source/test.py
 test.ipynb
+data/patch-gen-training-results.csv
+logs copy/
 
 
 # Byte-compiled / optimized / DLL files
