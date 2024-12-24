@@ -48,14 +48,23 @@ def fine_tune_codet5_model(dataset, model, tokenizer, output_dir):
     tokenized_datasets = dataset.map(
         lambda example: tokenize_function(example, tokenizer), batched=True
     )
-    tokenized_datasets = tokenized_datasets.remove_columns(
-        [
-            "id",
-            "topic",
-            "vulnerable",
-            "fix",
-        ]
-    )
+
+    # List of columns you want to remove
+    columns_to_remove = ["id", "topic", "vulnerable", "fix"]
+
+    # Get the current column names in the dataset
+    current_columns = tokenized_datasets.column_names
+
+    # Filter the columns that actually exist in the dataset
+    columns_to_remove = [
+        col for col in columns_to_remove if col in current_columns]
+
+    # Remove only the existing columns
+    if columns_to_remove:
+        tokenized_datasets = tokenized_datasets.remove_columns(
+            columns_to_remove)
+    else:
+        print("No columns to remove.")
 
     # # Filter the dataset to keep only a few examples for training
     # tokenized_datasets = tokenized_datasets.filter(

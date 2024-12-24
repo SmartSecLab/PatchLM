@@ -55,6 +55,14 @@ class CodeT5Model:
 
         model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name, trust_remote_code=True).to(self.device)
+
+        # Setting `pad_token_id` to `eos_token_id`:2 for open-end generation.
+        # A decoder-only architecture is being used, but right-padding was detected!
+        # For correct generation results, please set `padding_side='left'`
+        # when initializing the tokenizer.
+        # Set padding to 'left'
+        tokenizer.padding_side = "left"
+
         self.log.info("Model loaded successfully!")
         self.log.info(f"Original Model: {model_name}")
         self.log.info(self.dash_line)

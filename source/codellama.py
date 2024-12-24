@@ -6,6 +6,7 @@ terms of the Apachee-2.0 license- http://www.apache.org/licenses/
 Project: PatchT5 - Code Language Models on Generating Vulnerability Security Fixes utilizing Commit Hunks
 @Programmer: Guru Bhandari
 """
+
 import os
 from datetime import datetime
 from functools import partial
@@ -66,7 +67,8 @@ class CodeLlamaModel:
             model.config.use_cache = False
 
             tokenizer.pad_token = tokenizer.eos_token
-            tokenizer.padding_side = "right"
+            # tokenizer.padding_side = "right"
+            tokenizer.padding_side = "left"
 
             # Save the quantized model for future use
             self.log.info("Saving the quantized model for future use...")

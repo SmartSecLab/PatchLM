@@ -14,6 +14,14 @@ source/test.py
 test.ipynb
 data/patch-gen-training-results.csv
 logs copy/
+codellama.ipynb
+plots.ipynb
+requirements-old.txt
+slurm-ex3.sbatch
+slurm-kris.sbatch
+slurm-saga.sbatch
+summarize.ipynb
+train.sh
 
 
 # Byte-compiled / optimized / DLL files

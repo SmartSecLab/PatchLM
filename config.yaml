@@ -2,10 +2,10 @@ base_model: Salesforce/codet5-base
 # base_model: codellama/CodeLlama-7b-Instruct-hf
 # base_model: models/CodeLLama-7b-quantized-4bit
 # most lightweight model of CodeLlama for instruction prompt
-debug_mode: True
+debug_mode: False
 use_4bit_quantization: True
 dataset_use: FixMe # FixMe or repairllama
-only_compare: True
+only_compare: False
 # compare with already fine-tune instruct_model
 instruct_model: models/codellama20epoch-20240828-165901
 # instruct_model: models/codellama-Debug
@@ -21,8 +21,8 @@ fine_tuning:
   output_dir: models
   learning_rate: 1e-3
   num_train_epochs: 20
-  batch_size: 32
-  per_device_train_bsize: 16
+  batch_size: 16 # 32 for eX3 HPC
+  per_device_train_bsize: 8 # 16 for eX3 HPC
   weight_decay: 0.01
   logging_steps: 200
   max_steps: 20
@@ -34,9 +34,9 @@ preprocess:
   prog_lang: # list of programming languages
     - C
     - C++
-    # - Python
-    # - Java
-    # - JavaScript
+    - Python
+    - Java
+    - JavaScript
     # - PHP
     # - Ruby
     # - Go

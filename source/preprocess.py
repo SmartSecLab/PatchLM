@@ -117,49 +117,35 @@ def add_question(example):
 def load_dataset_from_fixme():
     """Load the dataset and split it into train, val, and test sets"""
     df = load_df_from_sqlite()
-    total_rows = len(df)
-    train_size = int(total_rows * 0.8)
-    val_size = int(total_rows * 0.1)
+    # Verify expected columns
+    required_columns = ["code_before", "code_after",
+                        "topic", "programming_language"]
+    for col in required_columns:
+        if col not in df.columns:
+            raise ValueError(
+                f"Missing required column in the DataFrame: {col}")
 
-    train_df = df.iloc[:train_size]
-    validation_df = df.iloc[train_size: train_size + val_size]
-    test_df = df.iloc[train_size + val_size:]
-
-    # Create Dataset objects
-    train_dataset = Dataset.from_dict(
+    # Convert the DataFrame into a Dataset
+    dataset = Dataset.from_dict(
         {
-            "id": list(train_df.index),
-            "vulnerable": train_df["code_before"],
-            "fix": train_df["code_after"],
-            "topic": train_df["topic"],
-            "programming_language": train_df["programming_language"],
-        }
-    )
-    validation_dataset = Dataset.from_dict(
-        {
-            "id": list(validation_df.index),
-            "vulnerable": validation_df["code_before"],
-            "fix": validation_df["code_after"],
-            "topic": validation_df["topic"],
-            "programming_language": validation_df["programming_language"],
-        }
-    )
-    test_dataset = Dataset.from_dict(
-        {
-            "id": list(test_df.index),
-            "vulnerable": test_df["code_before"],
-            "fix": test_df["code_after"],
-            "topic": test_df["topic"],
-            "programming_language": test_df["programming_language"],
+            "id": list(df.index),
+            "vulnerable": df["code_before"].tolist(),
+            "fix": df["code_after"].tolist(),
+            "topic": df["topic"].tolist(),
+            "programming_language": df["programming_language"].tolist(),
         }
     )
 
-    # Create DatasetDict with the desired format
+    # Split the dataset into train, validation, and test
+    train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
+    test_val_split = train_test_split["test"].train_test_split(
+        test_size=0.5, seed=42)
+
     dataset = DatasetDict(
         {
-            "train": train_dataset,
-            "validation": validation_dataset,
-            "test": test_dataset,
+            "train": train_test_split["train"],
+            "validation": test_val_split["train"],
+            "test": test_val_split["test"],
         }
     )
     dataset = dataset.map(add_question)
@@ -175,7 +161,8 @@ def load_dataset_from_fixme():
 
 
 def prepare_examples(dataset):
-    """ Similarize the dataset by adding a question to the dataset  and renaming the columns"""
+    """ Similarize the dataset by adding a question to the dataset  
+    and renaming the columns"""
     dataset = dataset.map(add_question)
     # add programming_language column
     dataset = dataset.map(
@@ -184,6 +171,16 @@ def prepare_examples(dataset):
     # rename the columns
     dataset = dataset.rename_column("input", "vulnerable")
     dataset = dataset.rename_column("output", "fix")
+    # Add a validation split (e.g., 10% of the training data)
+    if "validation" not in dataset.keys():
+        train_test_split = dataset["train"].train_test_split(
+            test_size=0.2, seed=42)
+        test_val_split = train_test_split["test"].train_test_split(
+            test_size=0.5, seed=42)
+        dataset["train"] = train_test_split["train"]
+        # 10% of the training data
+        dataset["validation"] = test_val_split["train"]
+        dataset["test"] = test_val_split["test"]  # 10% of the training data
     return dataset
 
 
@@ -196,10 +193,23 @@ def load_repairllama_dataset():
     # dataset = load_dataset("ASSERT-KTH/repairllama-dataset", "irXxorY")
     log.info("=" * 50)
     log.info("Loading the dataset...")
+
+    # Limit the dataset to 500 samples for debugging
+    debug_size = 500
+    if config["debug_mode"]:
+        log.info("Debug mode is ON")
+        # Shuffle and select 500 samples for each split
+        dataset = {
+            split: dataset[split].shuffle(seed=42).select(range(debug_size))
+            for split in dataset.keys()
+        }
+        dataset = DatasetDict(dataset)
+
     dataset = prepare_examples(dataset)
     log.info(dataset)
     log.info(f"Dataset shape: {dataset.shape}")
     # example = dataset["train"][0]
     # log.info(f"Example: \n{example}")
     log.info("=" * 50)
+    # exit(0)
     return dataset

@@ -81,8 +81,11 @@ if __name__ == "__main__":
     # Load the dataset
     if config["dataset_use"].lower() == "repairllama":
         dataset = load_repairllama_dataset()
+        config['preprocess']['prog_lang'] = ['Java']  # Only Java
+
     elif config["dataset_use"].lower() == "fixme":
         dataset = load_dataset_from_fixme()
+
     else:
         raise ValueError("Invalid config['dataset_use'] value!")
 
