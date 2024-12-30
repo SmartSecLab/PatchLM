@@ -161,7 +161,7 @@ def load_dataset_from_fixme():
 
 
 def prepare_examples(dataset):
-    """ Similarize the dataset by adding a question to the dataset  
+    """ Similarize the dataset by adding a question to the dataset
     and renaming the columns"""
     dataset = dataset.map(add_question)
     # add programming_language column
@@ -204,6 +204,11 @@ def load_repairllama_dataset():
             for split in dataset.keys()
         }
         dataset = DatasetDict(dataset)
+    else:  # Shuffle the dataset
+        log.info("Debug mode is OFF")
+        # dataset = {split: dataset[split].shuffle(seed=42).select(
+        #     range(999)) for split in dataset.keys()}
+        # dataset = DatasetDict(dataset)
 
     dataset = prepare_examples(dataset)
     log.info(dataset)
