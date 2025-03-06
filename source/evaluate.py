@@ -23,8 +23,7 @@ import source.utility as util
 log = util.get_logger()
 config = util.load_config()
 
-device = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu").type
+device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
 rouge = evaluate.load("rouge")
 dash_line = "=" * 50
@@ -144,7 +143,7 @@ def generate_fixes(
 
     # Tokenize all prompts at once, assuming tokenizer.batch_encode_plus or equivalent function
     inputs = tokenizer.batch_encode_plus(
-        prompts, return_tensors='pt', padding=True, truncation=True).to('cuda')
+        prompts, return_tensors='pt', padding=True, truncation=True).to(device)
 
     # Generate all outputs in a single batch operation
     with torch.no_grad():  # Disabling gradient calculation for inference

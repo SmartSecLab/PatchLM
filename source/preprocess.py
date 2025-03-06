@@ -215,6 +215,12 @@ def load_repairllama_dataset():
     log.info(f"Dataset shape: {dataset.shape}")
     # example = dataset["train"][0]
     # log.info(f"Example: \n{example}")
+    # # split 'test' set into test and validation set
+    test_val_splits = dataset['test'].train_test_split(test_size=0.5, seed=42)
+    dataset = DatasetDict({
+        'train': dataset['train'], 
+        'validation': test_val_splits['train'],
+        'test': test_val_splits['test']
+    })
     log.info("=" * 50)
-    # exit(0)
     return dataset

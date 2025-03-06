@@ -30,16 +30,23 @@ log.info(f"Logging at: {util.log_filename}")
 log.info(dash_line)
 
 
-# Clears the memory cache
-torch.cuda.empty_cache()
+# Check if CUDA is available, otherwise check for MPS, otherwise default to CPU
+if torch.cuda.is_available():
+    # Clears the memory cache
+    torch.cuda.empty_cache()
 
-# Optionally, you can also use this to clear the CUDA memory allocator
-torch.cuda.reset_max_memory_allocated()
-torch.cuda.reset_max_memory_cached()
+    # Optionally, you can also use this to clear the CUDA memory allocator
+    torch.cuda.reset_max_memory_allocated()
+    torch.cuda.reset_max_memory_cached()
+
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
 
 
-config["device"] = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu").type
+config["device"] = device.type
 
 log.info(f"Using available device: {config['device']}")
 
