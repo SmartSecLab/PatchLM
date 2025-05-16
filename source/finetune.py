@@ -93,21 +93,42 @@ def fine_tune_codet5_model(dataset, model, tokenizer, output_dir):
             max_steps=config["fine_tuning"]["max_steps"],
         )
     else:
+        # training_args = TrainingArguments(
+        #     output_dir=output_dir,
+        #     per_device_train_batch_size=per_device_train_batch_size,
+        #     learning_rate=float(config["fine_tuning"]["learning_rate"]),
+        #     gradient_accumulation_steps=gradient_accumulation_steps,
+        #     # optim="paged_adamw_32bit",
+        #     # save_steps=1,
+        #     # evaluation_strategy="steps",
+        #     # eval_steps=1,
+        #     # fp16=True,
+        #     # bf16=False,
+        #     num_train_epochs=1,
+        #     weight_decay=config["fine_tuning"]["weight_decay"],
+        #     logging_steps=1,
+        #     max_steps=1,
+        # )
         training_args = TrainingArguments(
             output_dir=output_dir,
+            num_train_epochs=num_train_epochs,
             per_device_train_batch_size=per_device_train_batch_size,
-            learning_rate=float(config["fine_tuning"]["learning_rate"]),
             gradient_accumulation_steps=gradient_accumulation_steps,
-            # optim="paged_adamw_32bit",
-            # save_steps=1,
-            # evaluation_strategy="steps",
-            # eval_steps=1,
-            # fp16=True,
-            # bf16=False,
-            num_train_epochs=1,
-            weight_decay=config["fine_tuning"]["weight_decay"],
-            logging_steps=1,
-            max_steps=1,
+            optim="paged_adamw_32bit",
+            save_steps=100,
+            logging_steps=100,
+            learning_rate=float(config['fine_tuning']['learning_rate']),
+            evaluation_strategy="steps",
+            eval_steps=100,
+            fp16=True,
+            bf16=False,
+            group_by_length=True,
+            logging_strategy="steps",
+            save_strategy="no",
+            gradient_checkpointing=False,
+            # ✅ These enable DDP when available, and do nothing on single GPU
+            ddp_backend="nccl",
+            ddp_find_unused_parameters=False,
         )
 
     trainer = Trainer(

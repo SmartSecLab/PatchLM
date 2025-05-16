@@ -53,8 +53,19 @@ class CodeT5Model:
             )
         self.log.info("Tokenizer loaded successfully!")
 
+        # model = AutoModelForSeq2SeqLM.from_pretrained(
+        #     model_name, 
+        #     trust_remote_code=True
+        #     ).to(self.device)
+
+        # enable for multi-GPUs
+        # Load model with device_map
         model = AutoModelForSeq2SeqLM.from_pretrained(
-            model_name, trust_remote_code=True).to(self.device)
+            model_name,
+            device_map="auto",                      # Automatically use multiple GPUs
+            torch_dtype=torch.float16,              # Optional: use float16
+            trust_remote_code=True
+        )
 
         # Setting `pad_token_id` to `eos_token_id`:2 for open-end generation.
         # A decoder-only architecture is being used, but right-padding was detected!
@@ -149,8 +160,10 @@ class CodeT5Model:
         self.log.info("Loading the fine-tuned model...")
         instruct_model = AutoModelForSeq2SeqLM.from_pretrained(
             self.config['fine_tuning']['output_dir'],
+            device_map='auto',
             torch_dtype=torch.bfloat16 if self.device == "cpu" else torch.float32,
-        ).to(self.device)
+            trust_remote_code=True,
+        )
 
         eva.show_original_instruct_fix(
             dataset, tokenizer, model, instruct_model, index=1)

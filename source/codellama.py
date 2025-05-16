@@ -42,7 +42,10 @@ class CodeLlamaModel:
         # Check if the quantized model is already saved locally
         if os.path.exists(local_model_path):
             self.log.info("Loading the locally saved quantized model...")
-            model = AutoModelForCausalLM.from_pretrained(local_model_path)
+            model = AutoModelForCausalLM.from_pretrained(
+                local_model_path,
+                device_map="auto" if self.device == "cuda" else "cpu", # 'auto' enables for multi-gpu
+                )
             tokenizer = AutoTokenizer.from_pretrained(local_model_path)
         else:
             self.log.info("Quantized model not found locally.")
@@ -53,14 +56,23 @@ class CodeLlamaModel:
                 load_in_4bit=use_4bit,
                 load_in_8bit_fp32_cpu_offload=not use_4bit
             )
-
-            # Initialize the model with empty weights
-            with init_empty_weights():
-                model = AutoModelForCausalLM.from_pretrained(
-                    base_model,
-                    device_map="auto" if self.device == "cuda" else "cpu",
-                    quantization_config=quantization_config,
-                )
+            
+            if use_4bit:
+                # Initialize the model with empty weights
+                with init_empty_weights():
+                    model = AutoModelForCausalLM.from_pretrained(
+                        base_model,
+                        device_map="auto" if self.device == "cuda" else "cpu",
+                        quantization_config=quantization_config,
+                    )
+            else:
+                # Initialize the model with empty weights
+                with init_empty_weights():
+                    model = AutoModelForCausalLM.from_pretrained(
+                        base_model,
+                        device_map="auto" if self.device == "cuda" else "cpu",
+                        # quantization_config=quantization_config,
+                    )
 
             tokenizer = AutoTokenizer.from_pretrained(base_model)
 
@@ -102,7 +114,7 @@ class CodeLlamaModel:
         self.log.info("Evaluating the base model...")
         eval_prompt = generate_eval_prompt_codellama(eval_sample)
         input_ids = tokenizer(
-            eval_prompt, return_tensors="pt").input_ids.to(self.device)
+            eval_prompt, return_tensors="pt").input_ids.to(model.device)
         # Generate text
         model_output = model.generate(
             input_ids=input_ids,
@@ -141,7 +153,9 @@ class CodeLlamaModel:
                 "Comparing already fine-tuned with the base model...")
 
             instruct_model = AutoModelForCausalLM.from_pretrained(
-                self.config["instruct_model"])
+                self.config["instruct_model"],
+                device_map="auto" if self.device == "cuda" else "cpu", # 'auto' enables for multi-gpu
+                )
 
             tokenizer = CodeLlamaTokenizer.from_pretrained(
                 self.config["instruct_model"])
