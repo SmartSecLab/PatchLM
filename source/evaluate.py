@@ -120,16 +120,99 @@ def get_prompt(vul, lang):
     return prompt
 
 
+# def generate_fixes(
+#     original_model,
+#     instruct_model,
+#     tokenizer,
+#     test_dataset,
+#     result_csv,
+# ):
+#     """" Generate fixes for a list of vulnerables using a model """
+
+#     # programming_languages = len(human_baseline_fixes) * ['Java']
+#     original_model_fixes = []
+#     instruct_model_fixes = []
+#     vulnerables = test_dataset["vulnerable"]
+#     human_baseline_fixes = test_dataset["fix"]
+#     programming_languages = test_dataset["programming_language"]
+#     sample_size = len(vulnerables)
+
+#     # Generate prompts in a single operation using list comprehension
+#     prompts = [get_prompt(vul, lang)
+#                for vul, lang in zip(vulnerables, programming_languages)]
+
+#     # Tokenize all prompts at once, assuming tokenizer.batch_encode_plus or equivalent function
+#     inputs = tokenizer.batch_encode_plus(
+#         prompts, return_tensors='pt', padding=True, truncation=True).to(original_model.device)
+
+#     # Generate all outputs in a single batch operation
+#     with torch.no_grad():  # Disabling gradient calculation for inference
+#         outputs = original_model.generate(**inputs, max_new_tokens=512)
+
+#     # Decode the generated outputs back into text
+#     original_model_fixes = tokenizer.batch_decode(
+#         outputs, skip_special_tokens=True)
+
+#     # Log the number of generated fixes
+#     done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
+#     log.info(f"Generated [{done_prop_og}] fixes from original so far")
+#     log.info(dash_line)
+#     log.info("Original model fixes generation done!")
+#     log.info(dash_line)
+
+#     # empty the cache
+#     del original_model
+
+#     # Generate all outputs in a single batch operation
+#     with torch.no_grad():  # Disabling gradient calculation for inference
+#         instruct_outputs = instruct_model.generate(
+#             **inputs, max_new_tokens=512)
+
+#     # Decode the generated outputs back into text
+#     instruct_model_fixes = tokenizer.batch_decode(
+#         instruct_outputs, skip_special_tokens=True)
+
+#     # Log the number of generated fixes
+#     done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
+#     log.info(f"Generated [{done_prop_og}] fixes from instruct model so far")
+#     log.info(dash_line)
+#     log.info("Instruct model fixes generation done!")
+#     log.info(dash_line)
+
+#     df = pd.DataFrame(
+#         zip(
+#             human_baseline_fixes,
+#             original_model_fixes,
+#             instruct_model_fixes,
+#             programming_languages,
+#         ),
+#         columns=[
+#             "human_baseline_fixes",
+#             "original_model_fixes",
+#             "instruct_model_fixes",
+#             "programming_language",
+#         ],
+#     )
+#     df.to_csv(result_csv, index=False)
+#     log.info(dash_line)
+#     log.info(f"Results of vul-fix-training saved to {result_csv}")
+#     log.info(dash_line)
+#     log.info("Sample of the results:")
+#     log.info(df.head())
+#     log.info(dash_line)
+#     return df
+
+
 def generate_fixes(
     original_model,
     instruct_model,
     tokenizer,
     test_dataset,
     result_csv,
+    batch_size=16  # You can adjust this
 ):
-    """" Generate fixes for a list of vulnerables using a model """
+    """ Generate fixes for a list of vulnerables using a model (batched) """
 
-    # programming_languages = len(human_baseline_fixes) * ['Java']
     original_model_fixes = []
     instruct_model_fixes = []
     vulnerables = test_dataset["vulnerable"]
@@ -137,47 +220,49 @@ def generate_fixes(
     programming_languages = test_dataset["programming_language"]
     sample_size = len(vulnerables)
 
-    # Generate prompts in a single operation using list comprehension
-    prompts = [get_prompt(vul, lang)
-               for vul, lang in zip(vulnerables, programming_languages)]
+    prompts = [get_prompt(vul, lang) for vul, lang in zip(vulnerables, programming_languages)]
 
-    # Tokenize all prompts at once, assuming tokenizer.batch_encode_plus or equivalent function
-    inputs = tokenizer.batch_encode_plus(
-        prompts, return_tensors='pt', padding=True, truncation=True).to(original_model.device)
+    for start_idx in range(0, sample_size, batch_size):
+        end_idx = min(start_idx + batch_size, sample_size)
+        batch_prompts = prompts[start_idx:end_idx]
 
-    # Generate all outputs in a single batch operation
-    with torch.no_grad():  # Disabling gradient calculation for inference
-        outputs = original_model.generate(**inputs, max_new_tokens=512)
+        # Tokenize the batch
+        batch_inputs = tokenizer.batch_encode_plus(
+            batch_prompts, return_tensors='pt', padding=True, truncation=True, max_length=2048
+        )
+        batch_inputs = {k: v.to(original_model.device) for k, v in batch_inputs.items()}
 
-    # Decode the generated outputs back into text
-    original_model_fixes = tokenizer.batch_decode(
-        outputs, skip_special_tokens=True)
+        # Generate outputs for original model
+        with torch.no_grad():
+            outputs = original_model.generate(**batch_inputs, max_new_tokens=512)
+        batch_fixes = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        original_model_fixes.extend(batch_fixes)
 
-    # Log the number of generated fixes
-    done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
-    log.info(f"Generated [{done_prop_og}] fixes from original so far")
-    log.info(dash_line)
+        # Free up CUDA memory if needed (especially if using multiple GPUs)
+        torch.cuda.empty_cache()
+
+        log.info(f"Generated [{len(original_model_fixes)}/{sample_size}] fixes from original so far")
     log.info("Original model fixes generation done!")
-    log.info(dash_line)
 
-    # empty the cache
-    del original_model
+    # Now run the instruct model (repeat batching)
+    for start_idx in range(0, sample_size, batch_size):
+        end_idx = min(start_idx + batch_size, sample_size)
+        batch_prompts = prompts[start_idx:end_idx]
 
-    # Generate all outputs in a single batch operation
-    with torch.no_grad():  # Disabling gradient calculation for inference
-        instruct_outputs = instruct_model.generate(
-            **inputs, max_new_tokens=512)
+        # Tokenize the batch
+        batch_inputs = tokenizer.batch_encode_plus(
+            batch_prompts, return_tensors='pt', padding=True, truncation=True, max_length=2048
+        )
+        batch_inputs = {k: v.to(instruct_model.device) for k, v in batch_inputs.items()}
 
-    # Decode the generated outputs back into text
-    instruct_model_fixes = tokenizer.batch_decode(
-        instruct_outputs, skip_special_tokens=True)
+        with torch.no_grad():
+            outputs = instruct_model.generate(**batch_inputs, max_new_tokens=512)
+        batch_fixes = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        instruct_model_fixes.extend(batch_fixes)
+        torch.cuda.empty_cache()
 
-    # Log the number of generated fixes
-    done_prop_og = f'{len(original_model_fixes)}/{sample_size}'
-    log.info(f"Generated [{done_prop_og}] fixes from instruct model so far")
-    log.info(dash_line)
+        log.info(f"Generated [{len(instruct_model_fixes)}/{sample_size}] fixes from instruct model so far")
     log.info("Instruct model fixes generation done!")
-    log.info(dash_line)
 
     df = pd.DataFrame(
         zip(
@@ -194,13 +279,11 @@ def generate_fixes(
         ],
     )
     df.to_csv(result_csv, index=False)
-    log.info(dash_line)
     log.info(f"Results of vul-fix-training saved to {result_csv}")
-    log.info(dash_line)
     log.info("Sample of the results:")
     log.info(df.head())
-    log.info(dash_line)
     return df
+
 
 
 def show_rouge_scores(original_model_results, instruct_model_results):

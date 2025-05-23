@@ -151,14 +151,25 @@ class CodeLlamaModel:
             self.log.info('=' * 50)
             self.log.info(
                 "Comparing already fine-tuned with the base model...")
+            self.log.info('=' * 50)
+            self.log.info("Loading fine-tuned instruct model...")
 
             instruct_model = AutoModelForCausalLM.from_pretrained(
                 self.config["instruct_model"],
-                device_map="auto" if self.device == "cuda" else "cpu", # 'auto' enables for multi-gpu
-                )
+                # device_map="auto" if self.device == "cuda" else "cpu", # 'auto' enables for multi-gpu
+                ).to("cuda:1")
+            # Move to GPU 1
+            # device = "cuda:1"
+            # eval_sample = {k: torch.tensor(v).to(device) if not torch.is_tensor(v) else v.to(device)
+            #    for k, v in eval_sample.items()}
 
+            # tokenizer = CodeLlamaTokenizer.from_pretrained(
+            #     self.config["instruct_model"])
             tokenizer = CodeLlamaTokenizer.from_pretrained(
-                self.config["instruct_model"])
+                self.config["base_model"])
+            tokenizer.pad_token = tokenizer.eos_token
+            # tokenizer.padding_side = "right"
+            tokenizer.padding_side = "left"
         else:
             trainer, instruct_model, tokenizer = fine_tune_codellama_model(
                 self.config, model, tokenizer, tokenized_train_dataset, tokenized_val_dataset)

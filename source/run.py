@@ -57,9 +57,13 @@ def get_run_id(config, model_type):
     if config['debug_mode']:
         run_id = model_type + "-Debug"
     else:
-        run_id = model_type + \
-            str(config['fine_tuning']['num_train_epochs']) + 'epoch-' + \
-            datetime.now().strftime("%Y%m%d-%H%M%S")
+        if config['only_compare']:
+            run_id = config['instruct_model'].split('/')[-1]
+        else:
+            run_id = model_type + \
+                str(config['fine_tuning']['num_train_epochs']) + 'epoch-' + \
+                datetime.now().strftime("%Y%m%d-%H%M%S")
+            
     config['fine_tuning']['output_dir'] = os.path.join(
         config['fine_tuning']['output_dir'], run_id)
     return config, run_id
@@ -122,7 +126,7 @@ if __name__ == "__main__":
 
     # result_csv = util.log_dir / f"result-{util.run_id}.csv"
     result_csv = os.path.join(
-        config['fine_tuning']['output_dir'], f"result-{run_id}.csv")
+        config['fine_tuning']['output_dir'], f"compare-with-{config['base_model'].split('/')[-1]}.csv")
 
     if config["debug_mode"]:
         test_dataset = dataset["test"].shuffle(seed=42).select(range(5))
