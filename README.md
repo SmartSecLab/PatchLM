@@ -1,4 +1,4 @@
-# PatchT5: Code Language Models on Generating Vulnerability Security Fixes utilizing Commit Hunks
+# PatchLM: Generating Vulnerability Security Fixes with Code Language Models
 
 Welcome to the repository for PatchT5, a novel code language model fine-tuned specifically to fix security vulnerabilities in code blocks derived from commit hunks associated with Common Vulnerabilities and Exposures (CVE) records.
 By leveraging our model to understand secure coding practices and generate accurate patches, PatchT5 aims to address the diverse nature of security flaws across multiple programming languages.
