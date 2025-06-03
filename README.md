@@ -25,6 +25,22 @@ Before generating patches, ensure that you have the necessary dependencies insta
 
 The used `FixMe` dataset is available at [Zenodo](https://zenodo.org/records/10955342). Please refer [GitHub repository](https://github.com/SmartSecLab/FixMe) to construct updated version of the dataset. Additionally, we have utilized `repairllama` dataset from Huggingface using the `datasets` library. You can find more information about this dataset [here](https://huggingface.co/datasets/ASSERT-KTH/repairllama-datasets).
 
+# Citation
+
+If you use this repository or PatchLM in your research or project, please cite the following paper:
+
+```
+@article{Bhandari2025,
+  title={Generating vulnerability security fixes with Code Language Models},
+  author={Bhandari, Guru and Gavric, Nikola and Shalaginov, Andrii},
+  journal={Information and Software Technology},
+  volume={185},
+  year={2025},
+  doi={10.1016/j.infsof.2025.107786}
+}
+
+```
+
 # Acknowledgement
 
 The data extraction process received substantial support from the `Kristiania-HPC` infrastructure hosted at Kristiania University College. Additionally, the machine learning experiments in this research study were made possible by the `eX3` HPC infrastructure hosted in Simula Research Laboratory.
